@@ -1,2 +1,2 @@
-# MyMovies
-End to end Opensource Movie Booking Software. 
+# StoreMate
+Opensource small scale retail + CRM software.
