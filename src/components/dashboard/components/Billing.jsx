@@ -100,7 +100,7 @@ export default function Billing() {
   );
 
   return (
-    <div className=" text-[#1F2937]">
+    <div className="p-6 bg-gray-50 min-h-screen text-[#1F2937]">
       <h2 className="text-2xl font-bold mb-4">Billing</h2>
 
       {/* Manual Item Entry */}
@@ -144,7 +144,7 @@ export default function Billing() {
           />
           <button
             onClick={handleAddManualItem}
-            className="cursor-pointer col-span-2 bg-green-600 text-white px-6 py-2 rounded"
+            className="cursor-pointer col-span-2 bg-gray-700 text-white px-4 py-2 rounded text-sm text-white px-6 py-2 rounded"
           >
             Add Manually
           </button>
