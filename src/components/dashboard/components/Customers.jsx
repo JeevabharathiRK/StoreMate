@@ -191,7 +191,7 @@ export default function Customers() {
   );
 
   return (
-    <div className=" text-gray-800">
+    <div className="p-6 bg-gray-50 min-h-screen text-gray-800">
       <h2 className="text-2xl font-bold mb-4">Customers</h2>
 
       <input
