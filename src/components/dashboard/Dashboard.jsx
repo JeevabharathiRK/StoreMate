@@ -65,10 +65,13 @@
 
 
 import { useState } from "react";
-import Overall from "./dashboardComponent/Overall";
 import BillingSales from "./dashboardComponent/BillingSales";
 import Customers from "./dashboardComponent/Customers";
-import Inventory from "./dashboardComponent/Inventory";
+import Leads from "./dashboardComponent/Leads";
+import Suppliers from "./dashboardComponent/Suppliers";
+import FollowUps from "./dashboardComponent/FollowUps";
+import Stocks from "./dashboardComponent/Stocks";
+import Analytics from "./dashboardComponent/Analytics";
 
 function Dashboard() {
   const [activePage, setActivePage] = useState("Dashboard");
@@ -76,16 +79,20 @@ function Dashboard() {
   // Helper to render the main content based on activePage
   function renderContent() {
     switch (activePage) {
-      case "Dashboard":
-        return <Overall />;
       case "Billing / Sales":
         return <BillingSales />;
       case "Customers":
         return <Customers />;
-      case "Inventory":
-        return <Inventory />;
+      case "Leads":
+        return <Leads />
+      case "Suppliers":
+        return <Suppliers />
+      case "FollowUps":
+        return <FollowUps />
+      case "Stocks":
+        return <Stocks />
       default:
-        return <Overall />;
+        return <Analytics />;
     }
   }
 
@@ -94,7 +101,7 @@ function Dashboard() {
       <div className="bg-[#1F2937] rounded-l-2xl w-60 p-6 text-white flex flex-col">
         <div className="ml-2 mb-8 text-white text-2xl font-semibold">StoreMate</div>
         <ul className="flex flex-col gap-4 ml-2 text-lg">
-          {["Dashboard", "Billing / Sales", "Customers", "Inventory"].map((item) => (
+          {["Analytics", "Billing / Sales", "Stocks",  "Leads", "FollowUps", "Customers","Suppliers"].map((item) => (
             <li
               key={item}
               className={`cursor-pointer hover:text-amber-400 ${
