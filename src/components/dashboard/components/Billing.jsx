@@ -38,17 +38,43 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [barcodeBuffer]);
 
-  const addItemByBarcode = (barcode) => {
-    const product = {
-      id: Date.now(),
-      barcode,
-      name: `Product ${barcode}`,
-      description: "Sample description",
-      category: "General",
-      qty: 1,
-      price: 100,
-    };
-    setItems((prevItems) => [...prevItems, product]);
+  const addItemByBarcode = async (barcode) => {
+    try {
+      const response = await fetch(
+        `http://localhost/api/billing?barcode=${barcode}`
+      );
+      if (!response.ok) {
+        throw new Error("Product not found");
+      }
+      const data = await response.json();
+      setItems((prevItems) => {
+        const barcodeStr = String(data.barcode);
+        const existing = prevItems.find(
+          (item) => String(item.barcode) === barcodeStr
+        );
+        if (existing) {
+          return prevItems.map((item) =>
+            String(item.barcode) === barcodeStr
+              ? { ...item, qty: item.qty + 1 }
+              : item
+          );
+        }
+        return [
+          ...prevItems,
+          {
+            id: Date.now(),
+            barcode: data.barcode,
+            name: data.product.productName,
+            description: data.product.productDescription,
+            category: data.product.category.categoryName,
+            qty: 1,
+            price: data.product.productPrice,
+          },
+        ];
+      });
+    } catch (error) {
+      alert("Product not found for barcode: " + barcode + error);
+    }
   };
 
   const updateQty = (id, qty) => {
@@ -117,7 +143,7 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
         placeholder="Search by product name or barcode"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-6"
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-6 outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
       />
 
       <div className="mb-2 text-gray-500">Products</div>
@@ -127,9 +153,10 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
           <thead>
             <tr className="bg-gray-100 text-left text-sm text-gray-600">
               <th className="px-4 py-2"></th>
-              <th className="px-4 py-2">S. No</th>
+              <th className="px-4 py-2">#</th>
               <th className="px-4 py-2">Barcode</th>
               <th className="px-4 py-2">Product Name</th>
+              <th className="px-4 py-2">Product Description</th>
               <th className="px-4 py-2">Category</th>
               <th className="px-4 py-2">Qty</th>
               <th className="px-4 py-2">Price</th>
@@ -150,12 +177,13 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
                 <td className="px-4 py-2">{index + 1}</td>
                 <td className="px-4 py-2">{item.barcode || "-"}</td>
                 <td className="px-4 py-2">{item.name}</td>
+                <td className="px-4 py-2 break-words max-w-xs">{item.description}</td>
                 <td className="px-4 py-2">{item.category}</td>
                 <td className="px-4 py-2">
                   <input
                     type="number"
                     min="1"
-                    className="w-16 p-1 border rounded"
+                    className="w-16 p-1 border rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
                     value={item.qty}
                     onChange={(e) => updateQty(item.id, e.target.value)}
                   />
@@ -167,19 +195,19 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
             {/* Grand Total row: only show if there are items */}
             {filteredItems.length > 0 && (
               <tr className="border-t border-gray-200 text-sm bg-gray-100">
-                <td className="px-4 py-2"></td>
-                <td className="px-4 py-2" colSpan={5}>
-                  <span className="font-semibold">Grand Total :</span>
+                <td className="px-4 py-2" colSpan={7}></td>
+                <td className="px-4 py-2" colSpan={1}>
+                  <span className="font-bold">Grand Total :</span>
                 </td>
-                <td className="px-4 py-2 font-semibold" colSpan={2}>
-                  ₹{grandTotal}
+                <td className="px-4 py-2 font-bold" colSpan={1}>
+                  ₹{grandTotal.toFixed(2)}
                 </td>
               </tr>
             )}
             {filteredItems.length === 0 && (
               <tr>
                 <td colSpan="8" className="px-4 py-4 text-center text-gray-500">
-                  No products found.
+                  Nothing added.
                 </td>
               </tr>
             )}
@@ -191,21 +219,21 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
         <input
           type="text"
           placeholder="Product Name"
-          className="p-2 border rounded"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.name}
           onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
         />
         <input
           type="text"
           placeholder="Description"
-          className="p-2 border rounded"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.description}
           onChange={(e) => setManualItem({ ...manualItem, description: e.target.value })}
         />
         <input
           type="text"
           placeholder="Category"
-          className="p-2 border rounded"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.category}
           onChange={(e) => setManualItem({ ...manualItem, category: e.target.value })}
         />
@@ -213,7 +241,7 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
           type="number"
           min="1"
           placeholder="Qty"
-          className="p-2 border rounded"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.qty === 0 ? "" : manualItem.qty}
           onChange={(e) => setManualItem({ ...manualItem, qty: Number(e.target.value) })}
         />
@@ -221,12 +249,12 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
           type="number"
           min="0"
           placeholder="Price"
-          className="p-2 border rounded"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.price === 0 ? "" : manualItem.price}
           onChange={(e) => setManualItem({ ...manualItem, price: Number(e.target.value) })}
         />
         <button
-          className="bg-[#E3D095] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
+          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
           onClick={handleAddManualItem}
         >
           + Add Item
