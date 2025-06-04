@@ -254,7 +254,7 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
           onChange={(e) => setManualItem({ ...manualItem, price: Number(e.target.value) })}
         />
         <button
-          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
+          className="bg-[#E3D095] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
           onClick={handleAddManualItem}
         >
           + Add Item
