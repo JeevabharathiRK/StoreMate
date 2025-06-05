@@ -3,9 +3,6 @@ import { useState, useRef } from "react";
 export default function Checkout({
   items,
   grandTotal,
-  customers,
-  onAddCustomer,
-  onSelectCustomer,
   onClose,
   onConfirm,
 }) {
@@ -21,8 +18,8 @@ export default function Checkout({
     phone: "",
     address: "",
     email: "",
+    dob: "",
   });
-  const [search, setSearch] = useState("");
   const printRef = useRef();
 
   const handlePrint = () => {
@@ -72,6 +69,107 @@ export default function Checkout({
       setFetchingCustomer(false);
     }
   };
+
+  // Post new customer data
+  const postNewCustomer = async () => {
+    if (
+      !newCustomer.fname ||
+      !newCustomer.lname ||
+      !newCustomer.phone ||
+      !newCustomer.address ||
+      !newCustomer.email ||
+      !newCustomer.dob
+    ) {
+      alert("Please fill out all fields");
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost/api/billing/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          {
+            customerFirstName: newCustomer.fname,
+            customerLastName: newCustomer.lname,
+            customerContact: newCustomer.phone,
+            customerAddress: newCustomer.address,
+            customerEmail: newCustomer.email,
+            customerDOB: newCustomer.dob,
+          }
+        ),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create customer");
+      }
+      const data = await response.json();
+      setSelectedCustomer(data);
+      setShowNewCustomer(false);
+      setShowSelectCustomer(true);
+    } catch (err) {
+      alert("Error creating customer: " + err.message);
+    }
+  };
+
+  //Post Checkout Details
+  const checkoutOrder = async () => {
+
+  const orderPayload = {
+    customer: {
+      customerId: selectedCustomer.customerId
+    },
+    orderDate: new Date().toISOString(),
+    orderTotal: grandTotal,
+    orderStatus: "CONFIRMED"
+  };
+
+  try {
+    // Step 1: Create customer order
+    const orderRes = await fetch("http://localhost/api/billing/customerOrders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload)
+    });
+
+    if (!orderRes.ok) throw new Error("Failed to create customer order");
+
+    const createdOrder = await orderRes.json();
+    const orderId = createdOrder.orderId;
+
+    // Step 2: Create order items one by one
+    for (const item of items) {
+      const itemPayload = {
+        order: { orderId }, // foreign key
+        product: { productId: item.productId }, // assuming this is the correct key
+        quantity: item.qty,
+        price: item.price
+      };
+
+      const itemRes = await fetch("http://localhost/api/billing/orderItems", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(itemPayload)
+      });
+
+      if (!itemRes.ok) {
+        throw new Error(`Failed to add item: ${item.name}`);
+      }
+
+      const itemResult = await itemRes.json();
+      console.log(`Item saved:`, itemResult);
+    }
+
+    console.log("Order placed successfully with all items.");
+    alert("Order successfully placed!");
+
+  } catch (err) {
+    console.error("Checkout failed:", err.message);
+    alert("Checkout failed: " + err.message);
+  }
+};
+
+
 
   return (
     <div className="p-8 bg-white shadow-lg w-full max-w-full min-h-screen">
@@ -194,12 +292,22 @@ export default function Checkout({
                 setNewCustomer({ ...newCustomer, email: e.target.value })
               }
             />
+            <input 
+              name="dob"
+              type="date" 
+              placeholder="DOB" 
+              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+              value={newCustomer.dob} 
+              onChange={ (e) =>
+                setNewCustomer({ ...newCustomer, dob: e.target.value })
+              }
+            />
           </div>
           <button
             className="mt-3 bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
             onClick={() => {
-              onAddCustomer(newCustomer);
               setShowNewCustomer(false);
+              postNewCustomer();
             }}
           >
             Save Customer
@@ -301,10 +409,11 @@ export default function Checkout({
         <button
           className="bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
           onClick={() => {
-            if (!selectedCustomer && !showNewCustomer) {
+            if (!selectedCustomer) {
               alert("Please select or create a customer before confirming checkout.");
               return;
             }
+            checkoutOrder();
             onConfirm();
             handlePrint();
           }}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Checkout from "./billingComponents/Checkout"; // Make sure this path is correct
 
-export default function Billing({ customers = [], onAddCustomer, onSelectCustomer }) {
+export default function Billing() {
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,6 +64,7 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
           {
             id: Date.now(),
             barcode: data.barcode,
+            productId: data.product.productId,
             name: data.product.productName,
             description: data.product.productDescription,
             category: data.product.category.categoryName,
@@ -99,6 +100,7 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
 
     const newItem = {
       id: Date.now(),
+      productId: null,
       ...manualItem,
       barcode: null,
     };
@@ -125,9 +127,6 @@ export default function Billing({ customers = [], onAddCustomer, onSelectCustome
       <Checkout
         items={items}
         grandTotal={grandTotal}
-        customers={customers}
-        onAddCustomer={onAddCustomer}
-        onSelectCustomer={onSelectCustomer}
         onClose={() => setShowCheckout(false)}
         onConfirm={handleConfirmCheckout}
       />

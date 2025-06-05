@@ -11,6 +11,7 @@ const LeadManager = () => {
     email: '',
     leadFrom: '',
     status: '',
+    createdAt: ''
   });
 
   useEffect(() => {
@@ -29,10 +30,10 @@ const LeadManager = () => {
   }, []);
 
   const filteredLeads = leads.filter((lead) =>
-    lead.leadName.toLowerCase().includes(search.toLowerCase()) ||
-    lead.contact.toLowerCase().includes(search.toLowerCase()) ||
-    lead.status.toLowerCase().includes(search.toLowerCase()) ||
-    (lead.leadFrom && lead.leadFrom.toLowerCase().includes(search.toLowerCase()))
+    lead.leadName?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.contact?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.status?.toLowerCase().includes(search.toLowerCase()) ||
+    (lead.leadFrom && lead.leadFrom?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleChange = (e) => {
@@ -40,20 +41,45 @@ const LeadManager = () => {
     setNewLead((prev) => ({ ...prev, [name]: value }));
   };
 
-  const addLead = () => {
+  const uploadLead = async (data) =>{
+    try{
+      const payload = {
+        leadName : data.leadName,
+        contact : data.contact,
+        leadFrom : data.leadFrom,
+        email : data.email,
+        status : data.status,
+        createdAt : new Date().toISOString()
+      };
+      const res = await fetch(`http://localhost/api/leads/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to upload Lead`);
+      }
+
+      const feed = await res.json();
+      console.log(`Upload Success : `, feed);
+      return feed;
+    } catch(err){
+      console.error("Upload failed:", err.message);
+      alert("Upload failed: " + err.message);
+      return null;
+    }
+
+  }
+
+  const addLead = async () => {
     if (!newLead.leadName || !newLead.contact || !newLead.email || !newLead.status || !newLead.leadFrom) {
       alert('Please fill out all fields');
       return;
     }
 
-    setLeads([
-      ...leads,
-      {
-        leadId: Date.now(),
-        ...newLead,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    const lead = await uploadLead(newLead);
+    console.log(lead);
+    setLeads([...leads, lead]);
 
     setNewLead({
       leadName: '',

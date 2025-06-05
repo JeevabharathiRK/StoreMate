@@ -4,7 +4,6 @@ const Suppliers = () => {
   const [search, setSearch] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contact: '',
@@ -19,6 +18,7 @@ const Suppliers = () => {
         const data = await res.json();
         setSuppliers(data);
       } catch (err) {
+        console.error("Fetch failed:", err);
         setSuppliers([]);
       } finally {
         setLoading(false);
@@ -29,9 +29,9 @@ const Suppliers = () => {
 
   const filteredSuppliers = suppliers.filter((s) => {
     return (
-      s.supplierName.toLowerCase().includes(search.toLowerCase()) ||
-      s.supplierContact.includes(search) ||
-      s.supplierEmail.toLowerCase().includes(search.toLowerCase())
+      s.supplierName?.toLowerCase().includes(search.toLowerCase()) ||
+      s.supplierContact?.includes(search) ||
+      s.supplierEmail?.toLowerCase().includes(search.toLowerCase())
     );
   });
 
@@ -40,20 +40,50 @@ const Suppliers = () => {
     setNewSupplier((prev) => ({ ...prev, [name]: value }));
   };
 
-  const addSupplier = () => {
-    if (!newSupplier.name || !newSupplier.contact || !newSupplier.address || !newSupplier.email) {
+  const uploadSupplier = async (data) => {
+    try {
+      const payload = {
+        supplierName: data.name,
+        supplierContact: data.contact,
+        supplierAddress: data.address,
+        supplierEmail: data.email,
+      };
+      const res = await fetch(`http://localhost/api/suppliers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(`Failed to upload Supplier`);
+      const feed = await res.json();
+      console.log('Upload Success:', feed);
+      return feed;
+    } catch (err) {
+      console.error('Upload failed:', err.message);
+      alert('Upload failed: ' + err.message);
+      return null;
+    }
+  };
+
+  const addSupplier = async () => {
+    const { name, contact, address, email } = newSupplier;
+
+    if (!name || !contact || !address || !email) {
       alert('Please fill out all fields');
       return;
     }
 
+    const supplier = await uploadSupplier(newSupplier);
+    if (!supplier) return;
+
     setSuppliers([
       ...suppliers,
       {
-        supplierId: Date.now(),
-        supplierName: newSupplier.name,
-        supplierContact: newSupplier.contact,
-        supplierAddress: newSupplier.address,
-        supplierEmail: newSupplier.email,
+        supplierId: supplier.supplierId || Date.now(), // fallback id
+        supplierName: name,
+        supplierContact: contact,
+        supplierAddress: address,
+        supplierEmail: email,
       },
     ]);
 
@@ -65,6 +95,7 @@ const Suppliers = () => {
       <h1 className="text-3xl font-bold mb-6">Suppliers</h1>
 
       <input
+        name="search"
         type="text"
         placeholder="Search by name, contact, or email"
         value={search}
@@ -74,11 +105,38 @@ const Suppliers = () => {
 
       <div className="mb-2 text-gray-500">Add New Supplier</div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <input name="name" placeholder="Name" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newSupplier.name} onChange={handleChange} />
-        <input name="contact" placeholder="Contact" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newSupplier.contact} onChange={handleChange} />
-        <input name="email" placeholder="Email" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newSupplier.email} onChange={handleChange} />
-        <input name="address" placeholder="Address" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newSupplier.address} onChange={handleChange} />
-        <button className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-4 lg:col-span-1" onClick={addSupplier}>
+        <input
+          name="name"
+          placeholder="Name"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newSupplier.name}
+          onChange={handleChange}
+        />
+        <input
+          name="contact"
+          placeholder="Contact"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newSupplier.contact}
+          onChange={handleChange}
+        />
+        <input
+          name="email"
+          placeholder="Email"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newSupplier.email}
+          onChange={handleChange}
+        />
+        <input
+          name="address"
+          placeholder="Address"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newSupplier.address}
+          onChange={handleChange}
+        />
+        <button
+          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-4 lg:col-span-1"
+          onClick={addSupplier}
+        >
           + Add Supplier
         </button>
       </div>
@@ -99,27 +157,33 @@ const Suppliers = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSuppliers.map((s) => (
             <div
-              key={s.supplierId}
+              key={s.supplierId || `${s.supplierName}-${s.supplierContact}`}
               className="relative bg-white rounded-lg shadow-lg border border-gray-300 flex flex-col md:flex-row items-center gap-4 p-6"
             >
-              <button
+              <div
                 className="absolute top-2 right-2 bg-gray-200 hover:bg-green-700 text-gray-700 hover:text-white rounded-full w-7 h-7 flex items-center justify-center text-2xl font-bold shadow transition-colors p-0"
                 title="Edit Supplier"
-                onClick={() => setSelectedSupplier(null)}
               >
-                <span className="flex items-center justify-center w-full h-full">✍︎</span>
-              </button>
+                ✍︎
+              </div>
               <div className="flex-shrink-0 bg-[#483AA0] text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow">
                 {s.supplierName?.[0] || '?'}
               </div>
               <div className="flex-1 w-full">
                 <div className="font-bold text-lg text-[#483AA0] mb-1">
-                  {s.supplierName} <span className="text-[0.6rem]">Id: {s.supplierId}</span>
+                  {s.supplierName}{' '}
+                  <span className="text-[0.6rem]">Id: {s.supplierId}</span>
                 </div>
                 <div className="grid grid-cols-1 gap-1 text-gray-700 text-sm">
-                  <div><span className="font-semibold">Phone:</span> {s.supplierContact}</div>
-                  <div><span className="font-semibold">Email:</span> {s.supplierEmail}</div>
-                  <div><span className="font-semibold">Address:</span> {s.supplierAddress}</div>
+                  <div>
+                    <span className="font-semibold">Phone:</span> {s.supplierContact}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Email:</span> {s.supplierEmail}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Address:</span> {s.supplierAddress}
+                  </div>
                 </div>
               </div>
             </div>

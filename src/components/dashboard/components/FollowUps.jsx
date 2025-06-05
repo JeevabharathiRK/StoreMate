@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-const FollowUpManager = () => {
+const FollowUps = () => {
   const [search, setSearch] = useState('');
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [newFollowUp, setNewFollowUp] = useState({
-    customerName: '',
-    contact: '',
-    email: '',
-    followUpDate: new Date().toISOString(),
+    customerId: '',
     purpose: '',
     status: '',
   });
@@ -52,28 +49,51 @@ const FollowUpManager = () => {
     setNewFollowUp((prev) => ({ ...prev, [name]: value }));
   };
 
-  const addFollowUp = () => {
-    if (!newFollowUp.customerName || !newFollowUp.contact || !newFollowUp.email || !newFollowUp.followUpDate || !newFollowUp.purpose || !newFollowUp.status) {
-      alert('Please fill out all fields');
+  const addFollowUp = async () => {
+    if (!newFollowUp.customerId || !newFollowUp.purpose || !newFollowUp.status) {
+      alert('Please fill out Customer ID, Purpose, and Status.');
       return;
     }
 
-    setFollowUps([
-      ...followUps,
-      {
-        followUpId: Date.now(),
-        ...newFollowUp,
-      },
-    ]);
+    try {
+      const res = await fetch(`http://localhost/api/followups/customers?customerId=${newFollowUp.customerId}`);
+      if (!res.ok) throw new Error("Customer not found");
+      const customer = await res.json();
 
-    setNewFollowUp({
-      customerName: '',
-      contact: '',
-      email: '',
-      followUpDate: '',
-      purpose: '',
-      status: '',
-    });
+      const payload = {
+        customer: { customerId: newFollowUp.customerId },
+        purpose: newFollowUp.purpose,
+        status: newFollowUp.status,
+        followUpDate: new Date().toISOString()
+      };
+
+      const response = await fetch(`http://localhost/api/followups/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error("Failed to upload follow-up");
+      const created = await response.json();
+
+      const newEntry = {
+        followUpId: created.followUpId,
+        customerName: `${customer.customerFirstName} ${customer.customerLastName}`,
+        contact: customer.customerContact,
+        email: customer.customerEmail,
+        followUpDate: created.followUpDate,
+        purpose: created.purpose,
+        status: created.status,
+      };
+
+      setFollowUps([...followUps, newEntry]);
+
+      setNewFollowUp({ customerId: '', purpose: '', status: '' });
+
+    } catch (err) {
+      console.error("Upload error:", err.message);
+      alert("Upload failed: " + err.message);
+    }
   };
 
   return (
@@ -91,24 +111,11 @@ const FollowUpManager = () => {
       <div className="mb-2 text-gray-500">Add New Follow-Up</div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
         <input
-          name="customerName"
-          placeholder="Customer Name"
+          name="customerId"
+          type="number"
+          placeholder="Customer Id"
           className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-          value={newFollowUp.customerName}
-          onChange={handleChange}
-        />
-        <input
-          name="contact"
-          placeholder="Contact"
-          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-          value={newFollowUp.contact}
-          onChange={handleChange}
-        />
-        <input
-          name="email"
-          placeholder="Email"
-          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-          value={newFollowUp.email}
+          value={newFollowUp.customerId}
           onChange={handleChange}
         />
         <input
@@ -148,7 +155,6 @@ const FollowUpManager = () => {
               <th className="px-4 py-2">Contact</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Follow-Up Date</th>
-              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -172,7 +178,6 @@ const FollowUpManager = () => {
                   <td className="px-4 py-2">{item.contact}</td>
                   <td className="px-4 py-2">{item.status}</td>
                   <td className="px-4 py-2">{new Date(item.followUpDate).toLocaleString()}</td>
-                  <td className="px-4 py-2" contentEditable>Edit</td>
                 </tr>
               ))
             ) : (
@@ -189,4 +194,4 @@ const FollowUpManager = () => {
   );
 };
 
-export default FollowUpManager;
+export default FollowUps;

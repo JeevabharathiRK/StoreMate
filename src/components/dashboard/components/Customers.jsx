@@ -44,7 +44,36 @@ const Customers = () => {
     setNewCustomer((prev) => ({ ...prev, [name]: value }));
   };
 
-  const addCustomer = () => {
+  const uploadCustomer = async (data) =>{
+    try{
+
+      const payload = {
+        customerFirstName: data.firstName,
+        customerLastName : data.lastName,
+        customerContact : data.contact,
+        customerEmail : data.email,
+        customerAddress : data.address,
+        customerDOB : data.dob
+      }
+
+      const res = await fetch(`http://localhost/api/customers`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`Failed to upload Customer`);
+
+      const feed = await res.json();
+      console.log(`Upload Success:`, feed);
+      return feed;
+    }catch(err){
+      console.error("Upload failed:", err.message);
+      alert("Upload failed: " + err.message);
+      return null;
+    }
+  }
+
+  const addCustomer = async () => {
     if (
       !newCustomer.firstName ||
       !newCustomer.lastName ||
@@ -57,10 +86,12 @@ const Customers = () => {
       return;
     }
 
+    const customer = await uploadCustomer(newCustomer);
+
     setCustomers([
       ...customers,
       {
-        customerId: Date.now(),
+        customerId: customer.customerId,
         customerFirstName: newCustomer.firstName,
         customerLastName: newCustomer.lastName,
         customerContact: newCustomer.contact,
