@@ -4,6 +4,7 @@ const StockManager = () => {
   const [search, setSearch] = useState('');
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingStock, setIsAddingStock] = useState(false);
 
   const [newStock, setNewStock] = useState({
     supplierId: '',
@@ -15,15 +16,18 @@ const StockManager = () => {
     unitPrice: '',
   });
 
+
   useEffect(() => {
     const fetchStocks = async () => {
       try {
         const res = await fetch('http://localhost/api/stocks/products');
         const data = await res.json();
 
-        const flatData = data.map(stock => ({
+        const flatData = await Promise.all(
+        data.map(async (stock) => ({
           productId: stock.productId,
           supplierId: stock.supplier?.supplierId,
+          barcode: await getBarcodeByProductId(stock.productId),
           productName: stock.productName,
           productDescription: stock.productDescription,
           category: stock.category?.categoryName,
@@ -31,7 +35,12 @@ const StockManager = () => {
           inStock: stock.productStock,
           unitPrice: stock.productPrice,
           lastStockAt: stock.lastStockAt
-        }));
+        }))
+      );
+
+        console.log(flatData.productId)
+
+        flatData.barcode = await getBarcodeByProductId(flatData.productId);
 
         setStocks(flatData);
       } catch (err) {
@@ -48,6 +57,18 @@ const StockManager = () => {
     const { name, value } = e.target;
     setNewStock((prev) => ({ ...prev, [name]: value }));
   };
+
+  const getBarcodeByProductId = async (productId) =>{
+    try{
+      const res = await fetch(`http://localhost/api/stocks/barcodes?productId=${productId}`);
+      const data = await res.json();
+      return data.barcode;
+
+    } catch(err){
+      console.error('Failed to fetch barcode:', err);
+      return null;
+    }
+  }
 
   const getSupplierNameFromId = async (id) => {
     try {
@@ -132,6 +153,7 @@ const StockManager = () => {
       alert('Please fill out all fields');
       return;
     }
+    setIsAddingStock(true);
 
     const supplierName = await getSupplierNameFromId(supplierId);
     if (!supplierName) {
@@ -142,6 +164,7 @@ const StockManager = () => {
     const newEntry = {
       productId: null,
       supplierId,
+      barcode,
       productName,
       productDescription,
       category,
@@ -169,6 +192,7 @@ const StockManager = () => {
       inStock: '',
       unitPrice: '',
     });
+    setIsAddingStock(false);
   };
 
   const filteredStocks = stocks.filter((stock) =>
@@ -197,9 +221,22 @@ const StockManager = () => {
         <input name="category" placeholder="Category" value={newStock.category} onChange={handleChange} className="p-2 border border-gray-300 rounded-lg outline-none" />
         <input name="inStock" type="number" placeholder="Stock In" value={newStock.inStock} onChange={handleChange} className="p-2 border border-gray-300 rounded-lg outline-none" />
         <input name="unitPrice" type="number" step="0.01" placeholder="Unit Price" value={newStock.unitPrice} onChange={handleChange} className="p-2 border border-gray-300 rounded-lg outline-none" />
-        <button className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1" onClick={addStock}>
-          + Add New Stock
+        <button
+          className="flex items-center justify-center gap-2 bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1 disabled:bg-[#EFDCAB] border border-transparent disabled:border-[#E3D095] disabled:cursor-not-allowed"
+          disabled={isAddingStock}
+          onClick={addStock}
+        >
+          {isAddingStock ? (
+            <div className="w-24 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+              <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+            </div>
+          ) : (
+            "+ Add New Stock"
+          )}
         </button>
+
+
+
       </div>
 
       <div className="mb-2 text-gray-500">Current Stock</div>
@@ -208,6 +245,7 @@ const StockManager = () => {
           <thead>
             <tr className="bg-gray-100 text-left text-sm text-gray-600">
               <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">Barcode</th>
               <th className="px-4 py-2">Supplier</th>
               <th className="px-4 py-2">Product</th>
               <th className="px-4 py-2">Description</th>
@@ -232,6 +270,7 @@ const StockManager = () => {
               filteredStocks.map((stock, index) => (
                 <tr key={index} className="border-t border-gray-200 text-sm">
                   <td className="px-4 py-2">{index + 1}</td>
+                  <td className="px-4 py-2">{stock.barcode}</td>
                   <td className="px-4 py-2">{stock.supplier}</td>
                   <td className="px-4 py-2">{stock.productName}</td>
                   <td className="px-4 py-2 break-words max-w-xs">{stock.productDescription}</td>

@@ -4,6 +4,8 @@ const Suppliers = () => {
   const [search, setSearch] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingSupplier, setIsAddingSupplier] = useState(false);
+
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contact: '',
@@ -67,12 +69,13 @@ const Suppliers = () => {
 
   const addSupplier = async () => {
     const { name, contact, address, email } = newSupplier;
-
+    
     if (!name || !contact || !address || !email) {
       alert('Please fill out all fields');
       return;
     }
-
+    
+    setIsAddingSupplier(true);
     const supplier = await uploadSupplier(newSupplier);
     if (!supplier) return;
 
@@ -88,6 +91,7 @@ const Suppliers = () => {
     ]);
 
     setNewSupplier({ name: '', contact: '', address: '', email: '' });
+    setIsAddingSupplier(false);
   };
 
   return (
@@ -134,10 +138,17 @@ const Suppliers = () => {
           onChange={handleChange}
         />
         <button
-          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-4 lg:col-span-1"
+          className="flex items-center justify-center gap-2 bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1 disabled:bg-[#EFDCAB] border border-transparent disabled:border-[#E3D095] disabled:cursor-not-allowed"
+          disabled={isAddingSupplier}
           onClick={addSupplier}
         >
-          + Add Supplier
+          {isAddingSupplier ? (
+            <div className="w-24 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+              <div className="absolute left-0 h-full w-1/3 bg-[#483AA0] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+            </div>
+          ) : (
+            "+ Add Supplier"
+          )}
         </button>
       </div>
 

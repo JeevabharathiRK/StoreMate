@@ -4,6 +4,7 @@ const LeadManager = () => {
   const [search, setSearch] = useState('');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingLead, setIsAddingLead] = useState(false);
 
   const [newLead, setNewLead] = useState({
     leadName: '',
@@ -76,6 +77,7 @@ const LeadManager = () => {
       alert('Please fill out all fields');
       return;
     }
+    setIsAddingLead(true);
 
     const lead = await uploadLead(newLead);
     console.log(lead);
@@ -88,11 +90,7 @@ const LeadManager = () => {
       leadFrom: '',
       status: '',
     });
-  };
-
-  const handleEdit = (lead) => {
-    alert(`Edit lead: ${lead.leadName}`);
-    // Placeholder: Add edit logic/modal here
+    setIsAddingLead(false);
   };
 
   return (
@@ -149,10 +147,17 @@ const LeadManager = () => {
           <option value="Converted">Converted</option>
         </select>
         <button
-          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1"
+          className="flex items-center justify-center gap-2 bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1 disabled:bg-[#EFDCAB] border border-transparent disabled:border-[#E3D095] disabled:cursor-not-allowed"
+          disabled={isAddingLead}
           onClick={addLead}
         >
-          + Add Lead
+          {isAddingLead ? (
+            <div className="w-24 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+              <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+            </div>
+          ) : (
+            "+ Add Lead"
+          )}
         </button>
       </div>
 
@@ -168,7 +173,6 @@ const LeadManager = () => {
               <th className="px-4 py-2">Lead From</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Created At</th>
-              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -192,12 +196,6 @@ const LeadManager = () => {
                   <td className="px-4 py-2">{lead.leadFrom}</td>
                   <td className="px-4 py-2">{lead.status}</td>
                   <td className="px-4 py-2">{new Date(lead.createdAt).toLocaleString()}</td>
-                  <td
-                    className="px-4 py-2 text-blue-600 cursor-pointer hover:underline"
-                    onClick={() => handleEdit(lead)}
-                  >
-                    Edit
-                  </td>
                 </tr>
               ))
             ) : (

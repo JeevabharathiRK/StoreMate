@@ -5,6 +5,7 @@ const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false);
 
   const [newCustomer, setNewCustomer] = useState({
     firstName: '',
@@ -86,6 +87,8 @@ const Customers = () => {
       return;
     }
 
+    setIsAddingCustomer(true);
+
     const customer = await uploadCustomer(newCustomer);
 
     setCustomers([
@@ -109,6 +112,7 @@ const Customers = () => {
       address: '',
       dob: '',
     });
+    setIsAddingCustomer(false);
   };
 
   const handleEdit = (cust) => {
@@ -135,8 +139,18 @@ const Customers = () => {
         <input name="email" placeholder="Email" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newCustomer.email} onChange={handleChange} />
         <input name="address" placeholder="Address" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newCustomer.address} onChange={handleChange} />
         <input name="dob" type="date" placeholder="DOB" className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]" value={newCustomer.dob} onChange={handleChange} />
-        <button className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1" onClick={addCustomer}>
-          + Add Customer
+        <button
+          className="flex items-center justify-center gap-2 bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1 disabled:bg-[#EFDCAB] border border-transparent disabled:border-[#E3D095] disabled:cursor-not-allowed"
+          disabled={isAddingCustomer}
+          onClick={addCustomer}
+        >
+          {isAddingCustomer ? (
+            <div className="w-24 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+              <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+            </div>
+          ) : (
+            "+ Add Customer"
+          )}
         </button>
       </div>
 

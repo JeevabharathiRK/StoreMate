@@ -1,16 +1,12 @@
 import { useState, useRef } from "react";
 
-export default function Checkout({
-  items,
-  grandTotal,
-  onClose,
-  onConfirm,
-}) {
+export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showSelectCustomer, setShowSelectCustomer] = useState(false);
   const [customerContact, setCustomerContact] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [fetchingCustomer, setFetchingCustomer] = useState(false);
+  const [isAddingOrders, setIsAddingOrders] = useState(false);
   const [customerError, setCustomerError] = useState("");
   const [newCustomer, setNewCustomer] = useState({
     fname: "",
@@ -20,6 +16,7 @@ export default function Checkout({
     email: "",
     dob: "",
   });
+
   const printRef = useRef();
 
   const handlePrint = () => {
@@ -36,9 +33,7 @@ export default function Checkout({
             th { background: #f3f3f3; }
           </style>
         </head>
-        <body>
-          ${printContents}
-        </body>
+        <body>${printContents}</body>
       </html>
     `);
     printWindow.document.close();
@@ -47,20 +42,15 @@ export default function Checkout({
     printWindow.close();
   };
 
-  // Fetch customer info by phone number
   const fetchCustomerByContact = async () => {
     setFetchingCustomer(true);
     setCustomerError("");
     setSelectedCustomer(null);
     try {
       const response = await fetch(
-        `http://localhost/api/billing/customers?customerContact=${encodeURIComponent(
-          customerContact
-        )}`
+        `http://localhost/api/billing/customers?customerContact=${encodeURIComponent(customerContact)}`
       );
-      if (!response.ok) {
-        throw new Error("Customer not found");
-      }
+      if (!response.ok) throw new Error("Customer not found");
       const data = await response.json();
       setSelectedCustomer(data);
     } catch (err) {
@@ -70,39 +60,27 @@ export default function Checkout({
     }
   };
 
-  // Post new customer data
   const postNewCustomer = async () => {
-    if (
-      !newCustomer.fname ||
-      !newCustomer.lname ||
-      !newCustomer.phone ||
-      !newCustomer.address ||
-      !newCustomer.email ||
-      !newCustomer.dob
-    ) {
+    const { fname, lname, phone, address, email, dob } = newCustomer;
+    if (!fname || !lname || !phone || !address || !email || !dob) {
       alert("Please fill out all fields");
       return;
     }
+
     try {
       const response = await fetch("http://localhost/api/billing/customers", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(
-          {
-            customerFirstName: newCustomer.fname,
-            customerLastName: newCustomer.lname,
-            customerContact: newCustomer.phone,
-            customerAddress: newCustomer.address,
-            customerEmail: newCustomer.email,
-            customerDOB: newCustomer.dob,
-          }
-        ),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerFirstName: fname,
+          customerLastName: lname,
+          customerContact: phone,
+          customerAddress: address,
+          customerEmail: email,
+          customerDOB: dob,
+        }),
       });
-      if (!response.ok) {
-        throw new Error("Failed to create customer");
-      }
+      if (!response.ok) throw new Error("Failed to create customer");
       const data = await response.json();
       setSelectedCustomer(data);
       setShowNewCustomer(false);
@@ -112,8 +90,16 @@ export default function Checkout({
     }
   };
 
-  //Post Checkout Details
   const checkoutOrder = async () => {
+
+    setIsAddingOrders(true);
+
+  for (const item of items) {
+    if (item.qty > item.stock) {
+      alert(`Insufficient stock for "${item.name}". Available: ${item.stock}, Requested: ${item.qty}`);
+      return; // Stop checkout
+    }
+  } 
 
   const orderPayload = {
     customer: {
@@ -137,14 +123,20 @@ export default function Checkout({
     const createdOrder = await orderRes.json();
     const orderId = createdOrder.orderId;
 
-    // Step 2: Create order items one by one
+    // Step 2: Add order items and update stock
     for (const item of items) {
-      const itemPayload = {
-        order: { orderId }, // foreign key
-        product: { productId: item.productId }, // assuming this is the correct key
+      // Add item to order
+      const itemPayload = item.productId ? {
+        order: { orderId },
+        product: { productId: item.productId },
         quantity: item.qty,
         price: item.price
-      };
+      } : {
+        order: { orderId },
+        something : item.name,
+        quantity: item.qty,
+        price: item.price
+      }
 
       const itemRes = await fetch("http://localhost/api/billing/orderItems", {
         method: "POST",
@@ -152,24 +144,60 @@ export default function Checkout({
         body: JSON.stringify(itemPayload)
       });
 
-      if (!itemRes.ok) {
-        throw new Error(`Failed to add item: ${item.name}`);
-      }
+      if (!itemRes.ok) throw new Error(`Failed to add item: ${item.name}`);
 
-      const itemResult = await itemRes.json();
-      console.log(`Item saved:`, itemResult);
+      // Step 3: Update product stock
+      if(item.productId){
+        
+        const updatedStock = item.stock - item.qty;
+  
+        const stockUpdateRes = await fetch("http://localhost/api/billing/updateProduct", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId: item.productId,
+            productStock: updatedStock
+          })
+        });
+  
+        if (!stockUpdateRes.ok) throw new Error(`Failed to update stock for ${item.name}`);
+      }
     }
 
-    console.log("Order placed successfully with all items.");
     alert("Order successfully placed!");
-
-  } catch (err) {
+    } catch (err) {
     console.error("Checkout failed:", err.message);
     alert("Checkout failed: " + err.message);
-  }
-};
+    }
+  };
 
 
+  const renderCustomerCard = () =>
+    selectedCustomer && (
+      <div className="relative mt-4 bg-white rounded-lg shadow-lg border border-gray-300 flex flex-col md:flex-row items-center gap-4 p-6 max-w-md">
+        <button
+          className="absolute top-2 right-2 bg-gray-200 hover:bg-red-500 text-gray-700 hover:text-white rounded-full w-7 h-7 flex items-center justify-center text-2xl font-bold shadow transition-colors p-0"
+          title="Deselect Customer"
+          onClick={() => setSelectedCustomer(null)}
+        >
+          ×
+        </button>
+        <div className="flex-shrink-0 bg-[#483AA0] text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow">
+          {selectedCustomer.customerFirstName?.[0] || "?"}
+        </div>
+        <div className="flex-1 w-full">
+          <div className="font-bold text-lg text-[#483AA0] mb-1">
+            {selectedCustomer.customerFirstName} {selectedCustomer.customerLastName}
+          </div>
+          <div className="grid gap-1 text-gray-700 text-sm">
+            <div><b>Phone:</b> {selectedCustomer.customerContact}</div>
+            <div><b>Email:</b> {selectedCustomer.customerEmail}</div>
+            <div><b>Address:</b> {selectedCustomer.customerAddress}</div>
+            <div><b>DOB:</b> {selectedCustomer.customerDOB}</div>
+          </div>
+        </div>
+      </div>
+    );
 
   return (
     <div className="p-8 bg-white shadow-lg w-full max-w-full min-h-screen">
@@ -184,7 +212,7 @@ export default function Checkout({
                 <th className="px-4 py-2">#</th>
                 <th className="px-4 py-2">Barcode</th>
                 <th className="px-4 py-2">Product Name</th>
-                <th className="px-4 py-2">Product Description</th>
+                <th className="px-4 py-2">Description</th>
                 <th className="px-4 py-2">Category</th>
                 <th className="px-4 py-2">Qty</th>
                 <th className="px-4 py-2">Price</th>
@@ -193,32 +221,28 @@ export default function Checkout({
             </thead>
             <tbody>
               {items.map((item, idx) => (
-                <tr key={item.id} className="border-t border-gray-200 text-sm">
+                <tr key={idx} className="border-t border-gray-200 text-sm">
                   <td className="px-4 py-2">{idx + 1}</td>
                   <td className="px-4 py-2">{item.barcode || "-"}</td>
                   <td className="px-4 py-2">{item.name}</td>
                   <td className="px-4 py-2">{item.description}</td>
                   <td className="px-4 py-2">{item.category}</td>
                   <td className="px-4 py-2">{item.qty}</td>
-                  <td className="px-4 py-2">{item.price}</td>
-                  <td className="px-4 py-2">{item.qty * item.price}</td>
+                  <td className="px-4 py-2">₹{item.price}</td>
+                  <td className="px-4 py-2">₹{item.qty * item.price}</td>
                 </tr>
               ))}
-              <tr className="border-t border-gray-200 text-sm bg-gray-100">
-                <td className="px-4 py-2" colSpan={6}></td>
-                <td className="px-4 py-2" colSpan={1}>
-                  <span className="font-bold">Grand Total :</span>
-                </td>
-                <td className="px-4 py-2 font-bold" colSpan={1}>
-                  ₹{grandTotal.toFixed(2)}
-                </td>
+              <tr className="bg-gray-100 font-bold">
+                <td colSpan={6}></td>
+                <td className="px-4 py-2">Grand Total:</td>
+                <td className="px-4 py-2">₹{grandTotal.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Customer selection/creation */}
+      {/* Customer Buttons */}
       <div className="flex gap-4 mb-4">
         <button
           className="bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
@@ -244,182 +268,96 @@ export default function Checkout({
 
       {/* New Customer Form */}
       {showNewCustomer && (
-        <div className="mb-4 p-4 ">
+        <div className="mb-4 p-4">
           <h3 className="font-semibold mb-2">Create New Customer</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <input
-              type="text"
-              placeholder="First Name"
-              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-              value={newCustomer.fname}
-              onChange={(e) =>
-                setNewCustomer({ ...newCustomer, fname: e.target.value })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-              value={newCustomer.lname}
-              onChange={(e) =>
-                setNewCustomer({ ...newCustomer, lname: e.target.value })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Phone"
-              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-              value={newCustomer.phone}
-              onChange={(e) =>
-                setNewCustomer({ ...newCustomer, phone: e.target.value })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Address"
-              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-              value={newCustomer.address}
-              onChange={(e) =>
-                setNewCustomer({ ...newCustomer, address: e.target.value })
-              }
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-              value={newCustomer.email}
-              onChange={(e) =>
-                setNewCustomer({ ...newCustomer, email: e.target.value })
-              }
-            />
-            <input 
-              name="dob"
-              type="date" 
-              placeholder="DOB" 
-              className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-              value={newCustomer.dob} 
-              onChange={ (e) =>
-                setNewCustomer({ ...newCustomer, dob: e.target.value })
-              }
-            />
+            {["fname", "lname", "phone", "address", "email", "dob"].map((field) => (
+              <input
+                key={field}
+                type={field === "dob" ? "date" : field === "email" ? "email" : "text"}
+                placeholder={field[0].toUpperCase() + field.slice(1)}
+                className="p-2 border border-gray-300 rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+                value={newCustomer[field]}
+                onChange={(e) => setNewCustomer({ ...newCustomer, [field]: e.target.value })}
+              />
+            ))}
           </div>
           <button
             className="mt-3 bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
-            onClick={() => {
-              setShowNewCustomer(false);
-              postNewCustomer();
-            }}
+            onClick={postNewCustomer}
           >
             Save Customer
           </button>
         </div>
       )}
 
-      {/* Select Existing Customer - Phone Input and Card */}
-      {showSelectCustomer && (
-        <>
-          {/* Show input and parent only if no customer is selected */}
-          {!selectedCustomer && (
-            <div className="mb-4 p-4">
-              <h3 className="font-semibold mb-2">Find Existing Customer</h3>
-              <form
-                className="flex gap-2 mb-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!fetchingCustomer && customerContact) {
-                    fetchCustomerByContact();
-                  }
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Enter Mobile Number"
-                  className="p-2 border border-gray-300 rounded flex-1 outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
-                  value={customerContact}
-                  onChange={(e) => setCustomerContact(e.target.value)}
-                  disabled={fetchingCustomer}
-                />
-                <button
-                  type="submit"
-                  className="bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
-                  disabled={fetchingCustomer || !customerContact}
-                >
-                  {fetchingCustomer ? "Searching..." : "Search"}
-                </button>
-              </form>
-              {customerError && (
-                <div className="text-red-600 mb-2">{customerError}</div>
-              )}
-            </div>
-          )}
-          {/* Show only the card, without the parent box, after search */}
-          {selectedCustomer && (
-            <div className="relative mt-4 bg-white rounded-lg shadow-lg border border-gray-300 flex flex-col md:flex-row items-center gap-4 p-6 max-w-md">
-              {/* X button in top right */}
-              <button
-                className="absolute top-2 right-2 bg-gray-200 hover:bg-red-500 text-gray-700 hover:text-white rounded-full w-7 h-7 flex items-center justify-center text-2xl font-bold shadow transition-colors p-0"
-                title="Deselect Customer"
-                onClick={() => setSelectedCustomer(null)}
-                style={{ lineHeight: 1, padding: 0 }}
-              >
-                <span className="flex items-center justify-center w-full h-full">
-                  ×
-                </span>
-              </button>
-              <div className="flex-shrink-0 bg-[#483AA0] text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow">
-                {selectedCustomer.customerFirstName?.[0] || "?"}
-              </div>
-              <div className="flex-1 w-full">
-                <div className="font-bold text-lg text-[#483AA0] mb-1">
-                  {selectedCustomer.customerFirstName}{" "}
-                  {selectedCustomer.customerLastName}
-                </div>
-                <div className="grid grid-cols-1 gap-1 text-gray-700 text-sm">
-                  <div>
-                    <span className="font-semibold">Phone:</span>{" "}
-                    {selectedCustomer.customerContact}
+      {/* Existing Customer Search */}
+      {showSelectCustomer && !selectedCustomer && (
+        <div className="mb-4 p-4">
+          <h3 className="font-semibold mb-2">Find Existing Customer</h3>
+          <form
+            className="flex gap-2 mb-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!fetchingCustomer && customerContact) {
+                fetchCustomerByContact();
+              }
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Enter Mobile Number"
+              className="p-2 border border-gray-300 rounded flex-1 outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+              value={customerContact}
+              onChange={(e) => setCustomerContact(e.target.value)}
+              disabled={fetchingCustomer}
+            />
+            <button
+              type="submit"
+              className="w-24 bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
+              disabled={fetchingCustomer || !customerContact}
+            >
+              {fetchingCustomer ? (
+                  <div className="w-18 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+                    <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
                   </div>
-                  <div>
-                    <span className="font-semibold">Email:</span>{" "}
-                    {selectedCustomer.customerEmail}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Address:</span>{" "}
-                    {selectedCustomer.customerAddress}
-                  </div>
-                  <div>
-                    <span className="font-semibold">DOB:</span>{" "}
-                    {selectedCustomer.customerDOB}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
+                ) : (
+                  "Search"
+                )}
+            </button>
+          </form>
+          {customerError && <div className="text-red-600 mb-2">{customerError}</div>}
+        </div>
       )}
 
-      {/* Action buttons */}
+      {/* Customer Card */}
+      {renderCustomerCard()}
+
+      {/* Confirm Buttons */}
       <div className="flex gap-4 justify-end mt-4">
-        <button
-          className="bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded"
-          onClick={onClose}
-        >
+        <button className="bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded" onClick={onClose}>
           Cancel
         </button>
         <button
           className="bg-[#483AA0] hover:bg-[#4D55CC] text-white px-4 py-2 rounded"
-          onClick={() => {
+          disabled={isAddingOrders}
+          onClick={ async () => {
             if (!selectedCustomer) {
               alert("Please select or create a customer before confirming checkout.");
               return;
             }
-            checkoutOrder();
-            onConfirm();
+            await checkoutOrder();
             handlePrint();
+            onConfirm();
           }}
-          disabled={false} // Always enabled to allow alert
         >
-          Confirm Checkout
+          {isAddingOrders ? (
+                  <div className="w-[127.5px] h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+                    <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+                  </div>
+                ) : (
+                  "Confirm Checkout"
+                )}
         </button>
       </div>
     </div>

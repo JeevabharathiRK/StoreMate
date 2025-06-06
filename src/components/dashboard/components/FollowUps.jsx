@@ -4,6 +4,7 @@ const FollowUps = () => {
   const [search, setSearch] = useState('');
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
 
   const [newFollowUp, setNewFollowUp] = useState({
     customerId: '',
@@ -54,6 +55,7 @@ const FollowUps = () => {
       alert('Please fill out Customer ID, Purpose, and Status.');
       return;
     }
+    setIsAddingFollowUp(true);
 
     try {
       const res = await fetch(`http://localhost/api/followups/customers?customerId=${newFollowUp.customerId}`);
@@ -93,6 +95,8 @@ const FollowUps = () => {
     } catch (err) {
       console.error("Upload error:", err.message);
       alert("Upload failed: " + err.message);
+    } finally{
+      setIsAddingFollowUp(false);
     }
   };
 
@@ -136,10 +140,17 @@ const FollowUps = () => {
           <option value="Done">Done</option>
         </select>
         <button
-          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1"
+          className="flex items-center justify-center gap-2 bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1 disabled:bg-[#EFDCAB] border border-transparent disabled:border-[#E3D095] disabled:cursor-not-allowed"
+          disabled={isAddingFollowUp}
           onClick={addFollowUp}
         >
-          + Add FollowUp
+          {isAddingFollowUp ? (
+            <div className="w-24 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+              <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+            </div>
+          ) : (
+            "+ Add FollowUp"
+          )}
         </button>
       </div>
 

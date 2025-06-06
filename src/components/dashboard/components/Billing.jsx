@@ -69,6 +69,7 @@ export default function Billing() {
             description: data.product.productDescription,
             category: data.product.category.categoryName,
             qty: 1,
+            stock: data.product.productStock,
             price: data.product.productPrice,
           },
         ];
@@ -79,6 +80,7 @@ export default function Billing() {
   };
 
   const updateQty = (id, qty) => {
+    if(qty<=0) qty = 1;
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, qty: Number(qty) } : item
@@ -182,7 +184,7 @@ export default function Billing() {
                   <input
                     type="number"
                     min="1"
-                    className="w-16 p-1 border rounded outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+                    className="w-16 p-1 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
                     value={item.qty}
                     onChange={(e) => updateQty(item.id, e.target.value)}
                   />
@@ -253,7 +255,7 @@ export default function Billing() {
           onChange={(e) => setManualItem({ ...manualItem, price: Number(e.target.value) })}
         />
         <button
-          className="bg-[#E3D095] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
+          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
           onClick={handleAddManualItem}
         >
           + Add Item
