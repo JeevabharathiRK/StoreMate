@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import classNames from 'classnames';
 import {
   BarChart,
   Bar,
@@ -16,75 +17,104 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-import { Card } from '../../ui/card';
-
-// Static data
-const engagementData = [
-  { name: 'New Customers', value: 400 },
-  { name: 'Existing', value: 880 },
-  { name: 'Leads', value: 600 },
-];
-
-const sellingProducts = [
-  { name: 'Shirts', value: 88 },
-  { name: 'Mobiles', value: 60 },
-  { name: 'Laptops', value: 40 },
-];
-
-const profitLossData = [
-  { subject: 'Profit', A: 100 },
-  { subject: 'Loss', A: 40 },
-  { subject: 'Stocked', A: 60 },
-  { subject: 'Clearance', A: 90 },
-];
-
-// Sales data by filter
-const salesDataByFilter = {
-  Year: [
-    { name: 'Jan', value: 4 },
-    { name: 'Feb', value: 6 },
-    { name: 'Mar', value: 8 },
-    { name: 'Apr', value: 10 },
-    { name: 'May', value: 12 },
-    { name: 'Jun', value: 9 },
-    { name: 'Jul', value: 11 },
-    { name: 'Aug', value: 14 },
-    { name: 'Sep', value: 13 },
-    { name: 'Oct', value: 15 },
-    { name: 'Nov', value: 10 },
-    { name: 'Dec', value: 16 },
-  ],
-  Month: [
-    { name: 'Week 1', value: 5 },
-    { name: 'Week 2', value: 9 },
-    { name: 'Week 3', value: 12 },
-    { name: 'Week 4', value: 15 },
-  ],
-  Week: [
-    { name: 'Mon', value: 5 },
-    { name: 'Tue', value: 7 },
-    { name: 'Wed', value: 6 },
-    { name: 'Thu', value: 9 },
-    { name: 'Fri', value: 10 },
-    { name: 'Sat', value: 4 },
-    { name: 'Sun', value: 3 },
-  ],
-  Day: [
-    { name: '10AM', value: 2 },
-    { name: '12PM', value: 5 },
-    { name: '2PM', value: 7 },
-    { name: '4PM', value: 6 },
-    { name: '6PM', value: 4 },
-    { name: '8PM', value: 3 },
-  ],
-};
+const Card = ({ className, children }) => (
+  <div className={classNames('bg-white p-4 rounded-2xl shadow-sm border border-gray-200', className)}>
+    {children}
+  </div>
+);
 
 const timeFilters = ['Year', 'Month', 'Week', 'Day'];
 
 const Analytics = () => {
   const [filter, setFilter] = useState('Month');
-  const salesData = salesDataByFilter[filter];
-  const maxY = Math.max(...salesData.map(d => d.value)) + 5;
+
+  const [engagementData, setEngagementData] = useState([]);
+  const [salesData, setSalesData] = useState([]);
+  const [topSellingData, setTopSellingData] = useState([]);
+  const [profitLossData, setProfitLossData] = useState([]);
+
+  const [engagementLoading, setEngagementLoading] = useState(false);
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [topSellingLoading, setTopSellingLoading] = useState(false);
+  const [profitLossLoading, setProfitLossLoading] = useState(false);
+
+  const maxY = salesData.length > 0 ? Math.max(...salesData.map(d => d.value)) + 5 : 20;
+
+  // Fetch customer engagement
+  useEffect(() => {
+    const fetchEngagement = async () => {
+      setEngagementLoading(true);
+      try {
+        const res = await fetch(`http://localhost/api/analytics/engagement/${filter.toLowerCase()}`);
+        const { newCustomers, existingCustomers, leads } = await res.json();
+        setEngagementData([
+          { name: 'New Customers', value: newCustomers },
+          { name: 'Existing', value: existingCustomers },
+          { name: 'Leads', value: leads },
+        ]);
+      } catch (err) {
+        console.error('Error fetching engagement data:', err);
+        setEngagementData([]);
+      } finally {
+        setEngagementLoading(false);
+      }
+    };
+    fetchEngagement();
+  }, [filter]);
+
+  // Fetch sales data
+  useEffect(() => {
+    const fetchSales = async () => {
+      setSalesLoading(true);
+      try {
+        const res = await fetch(`http://localhost/api/analytics/sales/${filter.toLowerCase()}`);
+        const { data } = await res.json();
+        setSalesData(data || []);
+      } catch (err) {
+        console.error('Error fetching sales data:', err);
+        setSalesData([]);
+      } finally {
+        setSalesLoading(false);
+      }
+    };
+    fetchSales();
+  }, [filter]);
+
+  // Fetch top selling products
+  useEffect(() => {
+    const fetchTopSelling = async () => {
+      setTopSellingLoading(true);
+      try {
+        const res = await fetch(`http://localhost/api/analytics/topSelling/${filter.toLowerCase()}`);
+        const { data } = await res.json();
+        setTopSellingData(data || []);
+      } catch (err) {
+        console.error('Error fetching top selling data:', err);
+        setTopSellingData([]);
+      } finally {
+        setTopSellingLoading(false);
+      }
+    };
+    fetchTopSelling();
+  }, [filter]);
+
+  // Fetch profit/loss data
+  useEffect(() => {
+    const fetchProfitLoss = async () => {
+      setProfitLossLoading(true);
+      try {
+        const res = await fetch(`http://localhost/api/analytics/profitLoss/${filter.toLowerCase()}`);
+        const { data } = await res.json();
+        setProfitLossData(data || []);
+      } catch (err) {
+        console.error('Error fetching profit/loss data:', err);
+        setProfitLossData([]);
+      } finally {
+        setProfitLossLoading(false);
+      }
+    };
+    fetchProfitLoss();
+  }, [filter]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -100,73 +130,82 @@ const Analytics = () => {
               filter === item ? 'bg-black text-white' : 'bg-white text-black border-gray-300'
             }`}
           >
-            <span className={`inline-block w-3 h-3 border rounded-full ${
-              filter === item ? 'bg-white' : 'bg-gray-200'
-            }`}></span>
+            <span className={`inline-block w-3 h-3 border rounded-full ${filter === item ? 'bg-white' : 'bg-gray-200'}`}></span>
             {item}
           </button>
         ))}
       </div>
 
-      {/* Charts */}
+      {/* Customer Engagement & Sales Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card className="p-4">
+        <Card>
           <h2 className="text-lg mb-2">Customer Engagement Chart</h2>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={engagementData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#555" />
-            </BarChart>
+            {engagementLoading ? (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
+            ) : (
+              <BarChart data={engagementData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#555" />
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </Card>
 
-        <Card className="p-4">
-          <h2 className="text-lg mb-2">Sales Performance Graph ({filter})</h2>
+        <Card>
+          <h2 className="text-lg mb-2">Sales Performance Graph (sample data for Understaning)</h2>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, maxY]} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="#000"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-            </LineChart>
+            {salesLoading ? (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
+            ) : (
+              <LineChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis domain={[0, maxY]} />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#000" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            )}
           </ResponsiveContainer>
         </Card>
       </div>
 
+      {/* Top Selling & Profit/Loss Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-4">
-          <h2 className="text-lg mb-2">Top Selling Products</h2>
+        <Card>
+          <h2 className="text-lg mb-2">Top Selling Products (sample data for Understaning)</h2>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart layout="vertical" data={sellingProducts}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" domain={[0, 100]} />
-              <YAxis dataKey="name" type="category" />
-              <Tooltip />
-              <Bar dataKey="value" fill="#4B4B5B" />
-            </BarChart>
+            {topSellingLoading ? (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
+            ) : (
+              <BarChart layout="vertical" data={topSellingData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" />
+                <Tooltip />
+                <Bar dataKey="value" fill="#4B4B5B" />
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </Card>
 
-        <Card className="p-4">
-          <h2 className="text-lg mb-2">Profit Loss Ratio</h2>
+        <Card>
+          <h2 className="text-lg mb-2">Profit Loss Ratio (sample data for Understaning)</h2>
           <ResponsiveContainer width="100%" height={250}>
-            <RadarChart outerRadius={90} data={profitLossData}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="subject" />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} />
-              <Radar name="Performance" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-              <Tooltip />
-            </RadarChart>
+            {profitLossLoading ? (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
+            ) : (
+              <RadarChart outerRadius={90} data={profitLossData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="subject" />
+                <PolarRadiusAxis angle={30} />
+                <Radar name="Performance" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                <Tooltip />
+              </RadarChart>
+            )}
           </ResponsiveContainer>
         </Card>
       </div>

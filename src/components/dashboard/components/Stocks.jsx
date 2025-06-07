@@ -27,7 +27,7 @@ const StockManager = () => {
         data.map(async (stock) => ({
           productId: stock.productId,
           supplierId: stock.supplier?.supplierId,
-          barcode: await getBarcodeByProductId(stock.productId),
+          barcode: await getBarcodeByProductId(stock?stock.productId:null),
           productName: stock.productName,
           productDescription: stock.productDescription,
           category: stock.category?.categoryName,
@@ -37,11 +37,6 @@ const StockManager = () => {
           lastStockAt: stock.lastStockAt
         }))
       );
-
-        console.log(flatData.productId)
-
-        flatData.barcode = await getBarcodeByProductId(flatData.productId);
-
         setStocks(flatData);
       } catch (err) {
         console.error('Error fetching stocks:', err);
