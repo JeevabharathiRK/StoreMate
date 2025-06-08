@@ -97,14 +97,14 @@ const ServerUpTimer = ({ onClose }) => {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
+    const timer = setTimeout(() => setShowContent(true), 5000);
     return () => clearTimeout(timer);
   }, []);
 
   if (!showContent) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-indigo-700 via-purple-800 to-fuchsia-800 flex items-center justify-center min-h-screen">
+    <div className="fixed inset-0 bg-gradient-to-br from-indigo-700 via-purple-800 to-fuchsia-800 flex items-center justify-center min-h-screen overflow-auto">
       <div className="bg-white/90 shadow-2xl rounded-3xl p-8 md:p-12 w-full max-w-md mx-4 flex flex-col items-center">
         <div className="mb-6">
           {isServerUp ? (
