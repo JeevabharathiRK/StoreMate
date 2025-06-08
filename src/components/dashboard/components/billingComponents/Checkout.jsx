@@ -169,6 +169,7 @@ export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
     }
 
     alert("Order successfully placed!");
+    alert("Allow pop up to print the bill otherwise storemate can't move you to print the bill.");
     } catch (err) {
     console.error("Checkout failed:", err.message);
     alert("Checkout failed: " + err.message);
