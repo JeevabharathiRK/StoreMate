@@ -97,7 +97,7 @@ const ServerUpTimer = ({ onClose }) => {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 5000);
+    const timer = setTimeout(() => setShowContent(true), 3000);
     return () => clearTimeout(timer);
   }, []);
 
