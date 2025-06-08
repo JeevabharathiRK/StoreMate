@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import HostContext from "../../../contexts/HostContext";
 import Checkout from "./billingComponents/Checkout"; // Make sure this path is correct
 
 export default function Billing() {
+  const host = useContext(HostContext);
+
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,9 +43,7 @@ export default function Billing() {
 
   const addItemByBarcode = async (barcode) => {
     try {
-      const response = await fetch(
-        `http://localhost/api/billing?barcode=${barcode}`
-      );
+      const response = await fetch(`${host}/api/billing?barcode=${barcode}`);
       if (!response.ok) {
         throw new Error("Product not found");
       }
@@ -75,12 +76,13 @@ export default function Billing() {
         ];
       });
     } catch (error) {
-      alert("Product not found for barcode: " + barcode + error);
+      alert("Kindly add the stock for this product and try again");
+      console.error("Error fetching product by barcode:", error);
     }
   };
 
   const updateQty = (id, qty) => {
-    if(qty<=0) qty = 1;
+    if (qty <= 0) qty = 1;
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, qty: Number(qty) } : item
@@ -136,7 +138,7 @@ export default function Billing() {
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-gray-50 min-h-screen relative">
       <h1 className="text-3xl font-bold mb-6">Billing</h1>
 
       <input
@@ -178,7 +180,9 @@ export default function Billing() {
                 <td className="px-4 py-2">{index + 1}</td>
                 <td className="px-4 py-2">{item.barcode || "-"}</td>
                 <td className="px-4 py-2">{item.name}</td>
-                <td className="px-4 py-2 break-words max-w-xs">{item.description}</td>
+                <td className="px-4 py-2 break-words max-w-xs">
+                  {item.description}
+                </td>
                 <td className="px-4 py-2">{item.category}</td>
                 <td className="px-4 py-2">
                   <input
@@ -193,7 +197,6 @@ export default function Billing() {
                 <td className="px-4 py-2">{item.qty * item.price}</td>
               </tr>
             ))}
-            {/* Grand Total row: only show if there are items */}
             {filteredItems.length > 0 && (
               <tr className="border-t border-gray-200 text-sm bg-gray-100">
                 <td className="px-4 py-2" colSpan={7}></td>
@@ -222,21 +225,27 @@ export default function Billing() {
           placeholder="Product Name"
           className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.name}
-          onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, name: e.target.value })
+          }
         />
         <input
           type="text"
           placeholder="Description"
           className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.description}
-          onChange={(e) => setManualItem({ ...manualItem, description: e.target.value })}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, description: e.target.value })
+          }
         />
         <input
           type="text"
           placeholder="Category"
           className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.category}
-          onChange={(e) => setManualItem({ ...manualItem, category: e.target.value })}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, category: e.target.value })
+          }
         />
         <input
           type="number"
@@ -244,7 +253,9 @@ export default function Billing() {
           placeholder="Qty"
           className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.qty === 0 ? "" : manualItem.qty}
-          onChange={(e) => setManualItem({ ...manualItem, qty: Number(e.target.value) })}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, qty: Number(e.target.value) })
+          }
         />
         <input
           type="number"
@@ -252,7 +263,9 @@ export default function Billing() {
           placeholder="Price"
           className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
           value={manualItem.price === 0 ? "" : manualItem.price}
-          onChange={(e) => setManualItem({ ...manualItem, price: Number(e.target.value) })}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, price: Number(e.target.value) })
+          }
         />
         <button
           className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
@@ -277,6 +290,22 @@ export default function Billing() {
           Checkout
         </button>
       </div>
+      <p className="text-gray-500 text-sm">
+        Note: <span className="text-gray-700 font-semibold">Connect barcode scanner to your computer and scan the product barcode</span> to add it to the list.<br />
+        You can also mimic a barcode scanner by{" "}
+        <span className="text-gray-700 font-semibold">
+          clicking the empty white space below ⇣ and typing the barcode number, then press <span className="bg-[#DDDDDD] p-1 rounded">Enter</span>
+        </span>{" "}
+        to add the product.
+      </p>
+
+      {/* Display the current keypresses */}
+      {barcodeBuffer && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-200 p-2 text-center">
+          <span className="font-semibold">Barcode Buffer: </span>
+          {barcodeBuffer}
+        </div>
+      )}
     </div>
   );
 }

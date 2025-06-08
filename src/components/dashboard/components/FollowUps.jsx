@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext  } from 'react';
+import HostContext from '../../../contexts/HostContext';
 
 const FollowUps = () => {
+
+  const host = useContext(HostContext);
+
   const [search, setSearch] = useState('');
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +19,7 @@ const FollowUps = () => {
   useEffect(() => {
     const fetchFollowUps = async () => {
       try {
-        const res = await fetch('http://localhost/api/followups/all');
+        const res = await fetch(`${host}/api/followups/all`);
         const data = await res.json();
 
         const formattedData = data.map((item) => ({
@@ -58,7 +62,7 @@ const FollowUps = () => {
     setIsAddingFollowUp(true);
 
     try {
-      const res = await fetch(`http://localhost/api/followups/customers?customerId=${newFollowUp.customerId}`);
+      const res = await fetch(`${host}/api/followups/customers?customerId=${newFollowUp.customerId}`);
       if (!res.ok) throw new Error("Customer not found");
       const customer = await res.json();
 
@@ -69,7 +73,7 @@ const FollowUps = () => {
         followUpDate: new Date().toISOString()
       };
 
-      const response = await fetch(`http://localhost/api/followups/add`, {
+      const response = await fetch(`${host}/api/followups/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

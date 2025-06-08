@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
+import HostContext from '../../../contexts/HostContext';
 
 const StockManager = () => {
+
+  const host = useContext(HostContext);
+
   const [search, setSearch] = useState('');
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +24,7 @@ const StockManager = () => {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const res = await fetch('http://localhost/api/stocks/products');
+        const res = await fetch(`${host}/api/stocks/products`);
         const data = await res.json();
 
         const flatData = await Promise.all(
@@ -55,7 +59,7 @@ const StockManager = () => {
 
   const getBarcodeByProductId = async (productId) =>{
     try{
-      const res = await fetch(`http://localhost/api/stocks/barcodes?productId=${productId}`);
+      const res = await fetch(`${host}/api/stocks/barcodes?productId=${productId}`);
       const data = await res.json();
       return data.barcode;
 
@@ -67,7 +71,7 @@ const StockManager = () => {
 
   const getSupplierNameFromId = async (id) => {
     try {
-      const res = await fetch(`http://localhost/api/stocks/suppliers?id=${id}`);
+      const res = await fetch(`${host}/api/stocks/suppliers?id=${id}`);
       const data = await res.json();
       return data.supplierName;
     } catch (err) {
@@ -78,7 +82,7 @@ const StockManager = () => {
 
   const getCategoryIdFromCategory = async (category) => {
     try {
-      const res = await fetch(`http://localhost/api/stocks/categories?name=${category}`);
+      const res = await fetch(`${host}/api/stocks/categories?name=${category}`);
       const data = await res.json();
       return data.categoryId;
     } catch (err) {
@@ -99,7 +103,7 @@ const StockManager = () => {
         productStock: data.inStock,
         lastStockAt: data.lastStockAt
       };
-      const res = await fetch(`http://localhost/api/stocks/products`, {
+      const res = await fetch(`${host}/api/stocks/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -123,7 +127,7 @@ const StockManager = () => {
         barcode: data.barcode,
         product: { productId: data.productId }
       };
-      const res = await fetch(`http://localhost/api/stocks/barcodes`, {
+      const res = await fetch(`${host}/api/stocks/barcodes`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

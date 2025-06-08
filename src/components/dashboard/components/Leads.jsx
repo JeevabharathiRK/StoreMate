@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
+import HostContext from '../../../contexts/HostContext';
 
 const LeadManager = () => {
+
+  const host = useContext(HostContext);
+
   const [search, setSearch] = useState('');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +22,7 @@ const LeadManager = () => {
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const res = await fetch('http://localhost/api/leads/all');
+        const res = await fetch(`${host}/api/leads/all`);
         const data = await res.json();
         setLeads(data);
       } catch (err) {
@@ -52,7 +56,7 @@ const LeadManager = () => {
         status : data.status,
         createdAt : new Date().toISOString()
       };
-      const res = await fetch(`http://localhost/api/leads/add`, {
+      const res = await fetch(`${host}/api/leads/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

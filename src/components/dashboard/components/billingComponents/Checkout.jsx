@@ -1,6 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
+import HostContext from "../../../../contexts/HostContext";
 
 export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
+
+  const host = useContext(HostContext);
+
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showSelectCustomer, setShowSelectCustomer] = useState(false);
   const [customerContact, setCustomerContact] = useState("");
@@ -48,7 +52,7 @@ export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
     setSelectedCustomer(null);
     try {
       const response = await fetch(
-        `http://localhost/api/billing/customers?customerContact=${encodeURIComponent(customerContact)}`
+        `${host}/api/billing/customers?customerContact=${encodeURIComponent(customerContact)}`
       );
       if (!response.ok) throw new Error("Customer not found");
       const data = await response.json();
@@ -68,7 +72,7 @@ export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
     }
 
     try {
-      const response = await fetch("http://localhost/api/billing/customers", {
+      const response = await fetch(`${host}/api/billing/customers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -112,7 +116,7 @@ export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
 
   try {
     // Step 1: Create customer order
-    const orderRes = await fetch("http://localhost/api/billing/customerOrders", {
+    const orderRes = await fetch(`${host}/api/billing/customerOrders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderPayload)
@@ -138,7 +142,7 @@ export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
         price: item.price
       }
 
-      const itemRes = await fetch("http://localhost/api/billing/orderItems", {
+      const itemRes = await fetch(`${host}/api/billing/orderItems`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(itemPayload)
@@ -151,7 +155,7 @@ export default function Checkout({ items, grandTotal, onClose, onConfirm }) {
         
         const updatedStock = item.stock - item.qty;
   
-        const stockUpdateRes = await fetch("http://localhost/api/billing/updateProduct", {
+        const stockUpdateRes = await fetch(`${host}/api/billing/updateProduct`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

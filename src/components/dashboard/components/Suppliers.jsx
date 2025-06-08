@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
+import HostContext from '../../../contexts/HostContext';
 
 const Suppliers = () => {
+
+  const host = useContext(HostContext);
+
   const [search, setSearch] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +20,7 @@ const Suppliers = () => {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const res = await fetch('http://localhost/api/suppliers');
+        const res = await fetch(`${host}/api/suppliers`);
         const data = await res.json();
         setSuppliers(data);
       } catch (err) {
@@ -50,7 +54,7 @@ const Suppliers = () => {
         supplierAddress: data.address,
         supplierEmail: data.email,
       };
-      const res = await fetch(`http://localhost/api/suppliers`, {
+      const res = await fetch(`${host}/api/suppliers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

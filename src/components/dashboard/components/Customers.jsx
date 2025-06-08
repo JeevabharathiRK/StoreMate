@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
+import HostContext from '../../../contexts/HostContext';
 
 const Customers = () => {
+
+  const host = useContext(HostContext);
+
   const [search, setSearch] = useState('');
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +23,7 @@ const Customers = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const res = await fetch('http://localhost/api/customers');
+        const res = await fetch(`${host}/api/customers`);
         const data = await res.json();
         setCustomers(data);
       } catch (err) {
@@ -57,7 +61,7 @@ const Customers = () => {
         customerDOB : data.dob
       }
 
-      const res = await fetch(`http://localhost/api/customers`, {
+      const res = await fetch(`${host}/api/customers`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

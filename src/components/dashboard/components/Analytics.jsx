@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
 import classNames from 'classnames';
+import HostContext from '../../../contexts/HostContext';
 import {
   BarChart,
   Bar,
@@ -26,6 +27,8 @@ const Card = ({ className, children }) => (
 const timeFilters = ['Year', 'Month', 'Week', 'Day'];
 
 const Analytics = () => {
+  const host = useContext(HostContext);
+
   const [filter, setFilter] = useState('Month');
 
   const [engagementData, setEngagementData] = useState([]);
@@ -45,7 +48,7 @@ const Analytics = () => {
     const fetchEngagement = async () => {
       setEngagementLoading(true);
       try {
-        const res = await fetch(`http://localhost/api/analytics/engagement/${filter.toLowerCase()}`);
+        const res = await fetch(`${host}/api/analytics/engagement/${filter.toLowerCase()}`);
         const { newCustomers, existingCustomers, leads } = await res.json();
         setEngagementData([
           { name: 'New Customers', value: newCustomers },
@@ -67,7 +70,7 @@ const Analytics = () => {
     const fetchSales = async () => {
       setSalesLoading(true);
       try {
-        const res = await fetch(`http://localhost/api/analytics/sales/${filter.toLowerCase()}`);
+        const res = await fetch(`${host}/api/analytics/sales/${filter.toLowerCase()}`);
         const { data } = await res.json();
         setSalesData(data || []);
       } catch (err) {
@@ -85,7 +88,7 @@ const Analytics = () => {
     const fetchTopSelling = async () => {
       setTopSellingLoading(true);
       try {
-        const res = await fetch(`http://localhost/api/analytics/topSelling/${filter.toLowerCase()}`);
+        const res = await fetch(`${host}/api/analytics/topSelling/${filter.toLowerCase()}`);
         const { data } = await res.json();
         setTopSellingData(data || []);
       } catch (err) {
@@ -103,7 +106,7 @@ const Analytics = () => {
     const fetchProfitLoss = async () => {
       setProfitLossLoading(true);
       try {
-        const res = await fetch(`http://localhost/api/analytics/profitLoss/${filter.toLowerCase()}`);
+        const res = await fetch(`${host}/api/analytics/profitLoss/${filter.toLowerCase()}`);
         const { data } = await res.json();
         setProfitLossData(data || []);
       } catch (err) {
