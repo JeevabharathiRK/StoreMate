@@ -163,7 +163,7 @@ const ServerUpTimer = ({ onClose }) => {
         {!isServerUp && (
           <>
             <div className="text-sm font-semibold text-gray-500 mb-1">
-              Estimated Uptime
+              Estimated Time
             </div>
             <div className="text-5xl font-mono font-extrabold mb-4 text-gray-800 tracking-widest">
               {formatTime(countdown)}
@@ -184,7 +184,7 @@ const ServerUpTimer = ({ onClose }) => {
         <p className="text-base text-gray-700 mt-2">
           {isServerUp
             ? "Your server is running and ready to use."
-            : "Free hosting limits the server uptime. Please wait until your server runs."}
+            : "Free hosting may limit server uptime. Please wait while your server starts. It may take up to 5 minutes if the server is busy."}
         </p>
         <div className="mt-20 w-full">
           <MusicPlayer onToggleGif={gifToggle} onChangeGif={changeGif} />
