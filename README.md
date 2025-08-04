@@ -1,12 +1,94 @@
-# React + Vite
+# StoreMate
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![Website](https://img.shields.io/badge/Live%20Site-StoreMate-blue?logo=netlify)](https://store-mate.netlify.app/)
 
-Currently, two official plugins are available:
+<img width="1869" height="915" alt="StoreMate Screenshot" src="https://github.com/user-attachments/assets/c2c0c7cc-3e01-4692-9eeb-3268f5e7341f" />
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Overview
 
-## Expanding the ESLint configuration
+**StoreMate** is an open-source, small-scale retail + CRM web application designed for local retailers and small businesses. It combines robust product/inventory management with customer relationship management features, making it easy to run and grow your retail business.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Visit the live site: [store-mate.netlify.app](https://store-mate.netlify.app/)
+
+## Features
+
+- 🛒 Product and inventory management
+- 👥 Customer relationship management (CRM)
+- 🧾 Sales/order tracking
+- 🔍 Advanced search and filtering
+- ⭐ Wishlist and product reviews
+- 📊 Basic analytics and reporting
+- 📱 Responsive design (mobile & desktop)
+
+## Tech Stack
+
+- **Frontend:** React, Tailwind CSS
+- **Backend:** Java Spring Boot
+- **Database:** MySQL
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v14 or higher)
+- [npm](https://www.npmjs.com/) 
+- [Java JDK](https://adoptopenjdk.net/) (v11 or higher)
+- [Maven](https://maven.apache.org/) (for Spring Boot backend)
+- [MySQL](https://www.mysql.com/) 
+
+### Installation
+
+#### 1. Clone the repository
+
+```bash
+git clone https://github.com/JeevabharathiRK/StoreMate.git
+cd StoreMate
+```
+
+#### 2. Start the Backend
+
+- Go to the backend directory:
+  ```bash
+  cd backend
+  ```
+- Set up your SQL database and configure database connection properties in `application.properties`.
+- Build and start the Spring Boot server:
+  ```bash
+  mvn spring-boot:run
+  ```
+
+#### 3. Start the Frontend
+
+- Open a new terminal and go to the frontend directory:
+  ```bash
+  cd frontend
+  ```
+- Install dependencies:
+  ```bash
+  npm install
+  # or
+  yarn install
+  ```
+- Start the React development server:
+  ```bash
+  npm start
+  # or
+  yarn start
+  ```
+- Visit [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Contributing
+
+StoreMate is open to contributions! If you have suggestions, bug fixes, or new features, please open an issue or submit a pull request.
+
+## License
+
+[MIT](LICENSE)
+
+## Contact
+
+For questions or feedback, feel free to open an issue or reach out to [JeevabharathiRK]https://github.com/JeevabharathiRK/StoreMate.git 
+
+---
+
+> Made with ❤️ 
