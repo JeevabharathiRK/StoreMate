@@ -34,7 +34,7 @@ Visit the live site: [store-mate.netlify.app](https://store-mate.netlify.app/)
 - [Node.js](https://nodejs.org/) (v14 or higher)
 - [npm](https://www.npmjs.com/) 
 - [Java JDK](https://adoptopenjdk.net/) (v11 or higher)
-- [Maven](https://maven.apache.org/) (for Spring Boot backend)
+- [Gradle](https://gradle.org/) (for Spring Boot backend)
 - [MySQL](https://www.mysql.com/) 
 
 ### Installation
