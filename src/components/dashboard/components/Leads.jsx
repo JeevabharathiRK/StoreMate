@@ -1,74 +1,100 @@
-import { useState } from 'react';
-import { FaUpload } from 'react-icons/fa';
+import React, { useState, useEffect, useContext  } from 'react';
+import HostContext from '../../../contexts/HostContext';
 
-const Leads = () => {
-  const [leads, setLeads] = useState([
-    {
-      id: 1,
-      name: 'Emily Clark',
-      contact: '(+1)555-777-8888',
-      email: 'emily.clark@leadmail.com',
-      status: 'New',
-      createdAt: '2025-05-21 13:09:02',
-    },
-    {
-      id: 2,
-      name: 'Michael Brown',
-      contact: '(+1)555-888-9999',
-      email: 'michael.brown@leadmail.com',
-      status: 'Contacted',
-      createdAt: '2025-05-21 13:09:02',
-    },
-  ]);
+const LeadManager = () => {
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    id: null,
-    name: '',
+  const host = useContext(HostContext);
+
+  const [search, setSearch] = useState('');
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddingLead, setIsAddingLead] = useState(false);
+
+  const [newLead, setNewLead] = useState({
+    leadName: '',
     contact: '',
     email: '',
+    leadFrom: '',
     status: '',
+    createdAt: ''
   });
 
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const res = await fetch(`${host}/api/leads/all`);
+        const data = await res.json();
+        setLeads(data);
+      } catch (err) {
+        setLeads([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeads();
+  }, []);
+
   const filteredLeads = leads.filter((lead) =>
-  Object.values(lead).some((value) =>
-    String(value).toLowerCase().includes(searchTerm.toLowerCase())
-  )
-);
+    lead.leadName?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.contact?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.status?.toLowerCase().includes(search.toLowerCase()) ||
+    (lead.leadFrom && lead.leadFrom?.toLowerCase().includes(search.toLowerCase()))
+  );
 
-
-  const handleDelete = (id) => {
-    setLeads(leads.filter((lead) => lead.id !== id));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setNewLead((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddOrUpdate = () => {
-    if (!formData.name || !formData.contact || !formData.email || !formData.status) {
-      alert('Please fill in all fields');
+  const uploadLead = async (data) =>{
+    try{
+      const payload = {
+        leadName : data.leadName,
+        contact : data.contact,
+        leadFrom : data.leadFrom,
+        email : data.email,
+        status : data.status,
+        createdAt : new Date().toISOString()
+      };
+      const res = await fetch(`${host}/api/leads/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to upload Lead`);
+      }
+
+      const feed = await res.json();
+      console.log(`Upload Success : `, feed);
+      return feed;
+    } catch(err){
+      console.error("Upload failed:", err.message);
+      alert("Upload failed: " + err.message);
+      return null;
+    }
+
+  }
+
+  const addLead = async () => {
+    if (!newLead.leadName || !newLead.contact || !newLead.email || !newLead.status || !newLead.leadFrom) {
+      alert('Please fill out all fields');
       return;
     }
+    setIsAddingLead(true);
 
-    if (formData.id) {
-      // Update lead
-      setLeads(
-        leads.map((lead) =>
-          lead.id === formData.id ? { ...formData, createdAt: lead.createdAt } : lead
-        )
-      );
-    } else {
-      // Add new lead
-      const newLead = {
-        ...formData,
-        id: Date.now(),
-        createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      };
-      setLeads([...leads, newLead]);
-    }
+    const lead = await uploadLead(newLead);
+    console.log(lead);
+    setLeads([...leads, lead]);
 
-    setFormData({ id: null, name: '', contact: '', email: '', status: '' });
-  };
-
-  const handleEdit = (lead) => {
-    setFormData(lead);
+    setNewLead({
+      leadName: '',
+      contact: '',
+      email: '',
+      leadFrom: '',
+      status: '',
+    });
+    setIsAddingLead(false);
   };
 
   return (
@@ -77,56 +103,106 @@ const Leads = () => {
 
       <input
         type="text"
-        placeholder="Search by lead name, status, or date"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-6"
+        placeholder="Search by name, contact, status or source"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-6 outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
       />
 
-      <div className="mb-2 text-gray-500">Leads</div>
+      <div className="mb-2 text-gray-500">Add New Lead</div>
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+        <input
+          name="leadName"
+          placeholder="Name"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newLead.leadName}
+          onChange={handleChange}
+        />
+        <input
+          name="contact"
+          placeholder="Contact"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newLead.contact}
+          onChange={handleChange}
+        />
+        <input
+          name="email"
+          placeholder="Email"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newLead.email}
+          onChange={handleChange}
+        />
+        <input
+          name="leadFrom"
+          placeholder="Lead From"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={newLead.leadFrom}
+          onChange={handleChange}
+        />
+        <select
+          name="status"
+          value={newLead.status}
+          onChange={handleChange}
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+        >
+          <option value="">Select Status</option>
+          <option value="New">New</option>
+          <option value="Contacted">Contacted</option>
+          <option value="Converted">Converted</option>
+        </select>
+        <button
+          className="flex items-center justify-center gap-2 bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-2 md:col-span-2 lg:col-span-1 disabled:bg-[#EFDCAB] border border-transparent disabled:border-[#E3D095] disabled:cursor-not-allowed"
+          disabled={isAddingLead}
+          onClick={addLead}
+        >
+          {isAddingLead ? (
+            <div className="w-24 h-1 relative overflow-hidden rounded mt-[0.50rem] mb-[0.50rem]">
+              <div className="absolute left-0 h-full w-1/3 bg-[#fff] rounded animate-[loadBar_1.5s_linear_infinite]"></div>
+            </div>
+          ) : (
+            "+ Add Lead"
+          )}
+        </button>
+      </div>
 
+      <div className="mb-2 text-gray-500">Current Leads</div>
       <div className="overflow-x-auto rounded-md shadow-sm mb-4">
         <table className="min-w-full bg-white border border-gray-200">
           <thead>
             <tr className="bg-gray-100 text-left text-sm text-gray-600">
-              <th className="px-4 py-2"></th>
-              <th className="px-4 py-2">S. No</th>
-              <th className="px-4 py-2">Lead Name</th>
+              <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Contact</th>
               <th className="px-4 py-2">Email</th>
+              <th className="px-4 py-2">Lead From</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Created At</th>
-              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredLeads.map((lead, index) => (
-              <tr key={lead.id} className="border-t border-gray-200 text-sm">
-                <td className="px-4 py-2">
-                  <button
-                    className="bg-gray-300 rounded-full px-2"
-                    onClick={() => handleDelete(lead.id)}
-                  >
-                    -
-                  </button>
-                </td>
-                <td className="px-4 py-2">{index + 1}</td>
-                <td className="px-4 py-2">{lead.name}</td>
-                <td className="px-4 py-2">{lead.contact}</td>
-                <td className="px-4 py-2">{lead.email}</td>
-                <td className="px-4 py-2">{lead.status}</td>
-                <td className="px-4 py-2">{lead.createdAt}</td>
-                <td className="px-4 py-2">
-                  <button
-                    className="text-blue-600 hover:underline"
-                    onClick={() => handleEdit(lead)}
-                  >
-                    Edit
-                  </button>
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="px-4 py-4 text-center text-gray-500">
+                  <div className="flex space-x-2 justify-center items-center h-12">
+                    <div className="w-3 h-3 bg-[#4D55CC] rounded-full animate-bounce"></div>
+                    <div className="w-3 h-3 bg-[#4D55CC] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-3 h-3 bg-[#4D55CC] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  </div>
                 </td>
               </tr>
-            ))}
-            {filteredLeads.length === 0 && (
+            ) : filteredLeads.length > 0 ? (
+              filteredLeads.map((lead, index) => (
+                <tr key={lead.leadId || index} className="border-t border-gray-200 text-sm">
+                  <td className="px-4 py-2">{index + 1}</td>
+                  <td className="px-4 py-2">{lead.leadName}</td>
+                  <td className="px-4 py-2">{lead.contact}</td>
+                  <td className="px-4 py-2">{lead.email}</td>
+                  <td className="px-4 py-2">{lead.leadFrom}</td>
+                  <td className="px-4 py-2">{lead.status}</td>
+                  <td className="px-4 py-2">{new Date(lead.createdAt).toLocaleString()}</td>
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td colSpan="8" className="px-4 py-4 text-center text-gray-500">
                   No leads found.
@@ -136,62 +212,8 @@ const Leads = () => {
           </tbody>
         </table>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Lead Name"
-          className="p-2 border rounded"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Contact"
-          className="p-2 border rounded"
-          value={formData.contact}
-          onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          className="p-2 border rounded"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Status"
-          className="p-2 border rounded"
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-        />
-      </div>
-
-      <div className="flex gap-4">
-        <button
-          className="bg-gray-700 text-white px-4 py-2 rounded text-sm"
-          onClick={handleAddOrUpdate}
-        >
-          {formData.id ? 'Update Lead' : '+ Add Lead'}
-        </button>
-
-        {formData.id && (
-          <button
-            onClick={() => setFormData({ id: null, name: '', contact: '', email: '', status: '' })}
-            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
-          >
-            Cancel Edit
-          </button>
-        )}
-
-        <button className="flex items-center bg-gray-800 text-white px-4 py-2 rounded">
-          <FaUpload className="mr-2" />
-          Update
-        </button>
-      </div>
     </div>
   );
 };
 
-export default Leads;
+export default LeadManager;

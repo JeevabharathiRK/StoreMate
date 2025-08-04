@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import HostContext from "../../../contexts/HostContext";
+import Checkout from "./billingComponents/Checkout"; // Make sure this path is correct
 
 export default function Billing() {
+  const host = useContext(HostContext);
+
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -9,26 +13,26 @@ export default function Billing() {
     name: "",
     description: "",
     category: "",
-    qty: 1,
+    qty: 0,
     price: 0,
-  });
-  const [customer, setCustomer] = useState({
-    fname: "",
-    lname: "",
-    phone: "",
-    address: "",
-    email: "",
   });
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      const tag = document.activeElement.tagName;
+      const isInput =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        document.activeElement.isContentEditable;
+      if (isInput) return;
+
       if (e.key === "Enter") {
         if (barcodeBuffer.trim()) {
           addItemByBarcode(barcodeBuffer.trim());
           setBarcodeBuffer("");
         }
         e.preventDefault();
-      } else if (/^[a-zA-Z0-9]$/.test(e.key)) {
+      } else if (/^[0-9]$/.test(e.key)) {
         setBarcodeBuffer((prev) => prev + e.key);
       }
     };
@@ -37,20 +41,48 @@ export default function Billing() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [barcodeBuffer]);
 
-  const addItemByBarcode = (barcode) => {
-    const product = {
-      id: Date.now(),
-      barcode,
-      name: `Product ${barcode}`,
-      description: "Sample description",
-      category: "General",
-      qty: 1,
-      price: 100,
-    };
-    setItems((prevItems) => [...prevItems, product]);
+  const addItemByBarcode = async (barcode) => {
+    try {
+      const response = await fetch(`${host}/api/billing?barcode=${barcode}`);
+      if (!response.ok) {
+        throw new Error("Product not found");
+      }
+      const data = await response.json();
+      setItems((prevItems) => {
+        const barcodeStr = String(data.barcode);
+        const existing = prevItems.find(
+          (item) => String(item.barcode) === barcodeStr
+        );
+        if (existing) {
+          return prevItems.map((item) =>
+            String(item.barcode) === barcodeStr
+              ? { ...item, qty: item.qty + 1 }
+              : item
+          );
+        }
+        return [
+          ...prevItems,
+          {
+            id: Date.now(),
+            barcode: data.barcode,
+            productId: data.product.productId,
+            name: data.product.productName,
+            description: data.product.productDescription,
+            category: data.product.category.categoryName,
+            qty: 1,
+            stock: data.product.productStock,
+            price: data.product.productPrice,
+          },
+        ];
+      });
+    } catch (error) {
+      alert("Kindly add the stock for this product and try again");
+      console.error("Error fetching product by barcode:", error);
+    }
   };
 
   const updateQty = (id, qty) => {
+    if (qty <= 0) qty = 1;
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id ? { ...item, qty: Number(qty) } : item
@@ -64,19 +96,6 @@ export default function Billing() {
 
   const grandTotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
 
-  const handleCustomerChange = (e) => {
-    const { name, value } = e.target;
-    setCustomer({ ...customer, [name]: value });
-  };
-
-  const handleSubmit = () => {
-    const bill = { items, customer };
-    console.log("Final Bill:", bill);
-    setItems([]);
-    setCustomer({ fname: "", lname: "", phone: "", address: "", email: "" });
-    setShowCheckout(false);
-  };
-
   const handleAddManualItem = () => {
     if (!manualItem.name || manualItem.price <= 0 || manualItem.qty <= 0) {
       alert("Please fill all fields with valid values.");
@@ -85,12 +104,13 @@ export default function Billing() {
 
     const newItem = {
       id: Date.now(),
+      productId: null,
       ...manualItem,
       barcode: null,
     };
 
     setItems((prev) => [...prev, newItem]);
-    setManualItem({ name: "", description: "", category: "", qty: 1, price: 0 });
+    setManualItem({ name: "", description: "", category: "", qty: 0, price: 0 });
   };
 
   const filteredItems = items.filter(
@@ -99,200 +119,191 @@ export default function Billing() {
       item.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // When checkout is confirmed, clear items and close checkout
+  const handleConfirmCheckout = () => {
+    setItems([]);
+    setShowCheckout(false);
+  };
+
+  // --- Main Render ---
+  if (showCheckout) {
+    return (
+      <Checkout
+        items={items}
+        grandTotal={grandTotal}
+        onClose={() => setShowCheckout(false)}
+        onConfirm={handleConfirmCheckout}
+      />
+    );
+  }
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen text-[#1F2937]">
-      <h2 className="text-2xl font-bold mb-4">Billing</h2>
+    <div className="p-8 bg-gray-50 min-h-screen relative">
+      <h1 className="text-3xl font-bold mb-6">Billing</h1>
 
-      {/* Manual Item Entry */}
-      <div className="mb-6 border p-4 rounded bg-gray-50">
-        <h3 className="text-lg font-semibold mb-2">Add Item Manually</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Product Name"
-            value={manualItem.name}
-            onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
-            className="border px-4 py-2 rounded"
-          />
-          <input
-            type="text"
-            placeholder="Category"
-            value={manualItem.category}
-            onChange={(e) => setManualItem({ ...manualItem, category: e.target.value })}
-            className="border px-4 py-2 rounded"
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            value={manualItem.description}
-            onChange={(e) => setManualItem({ ...manualItem, description: e.target.value })}
-            className="border px-4 py-2 rounded"
-          />
-          <input
-            type="number"
-            placeholder="Price"
-            value={manualItem.price}
-            onChange={(e) => setManualItem({ ...manualItem, price: Number(e.target.value) })}
-            className="border px-4 py-2 rounded"
-          />
-          <input
-            type="number"
-            placeholder="Quantity"
-            value={manualItem.qty}
-            onChange={(e) => setManualItem({ ...manualItem, qty: Number(e.target.value) })}
-            className="border px-4 py-2 rounded"
-          />
-          <button
-            onClick={handleAddManualItem}
-            className="cursor-pointer col-span-2 bg-gray-700 text-white px-4 py-2 rounded text-sm text-white px-6 py-2 rounded"
-          >
-            Add Manually
-          </button>
-        </div>
-      </div>
-
-      {/* Search Field */}
       <input
         type="text"
-        placeholder="Search items in bill..."
+        placeholder="Search by product name or barcode"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="mb-4 border px-4 py-2 rounded w-full"
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-6 outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
       />
 
-      {/* Billing Table */}
-      <table className="w-full mb-6 border text-left">
-        <thead className="bg-[#F3F4F6]">
-          <tr>
-            <th className="p-2">S.No</th>
-            <th className="p-2">Product Name</th>
-            <th className="p-2">Description</th>
-            <th className="p-2">Category</th>
-            <th className="p-2">Qty</th>
-            <th className="p-2">Price</th>
-            <th className="p-2">Total</th>
-            <th className="p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredItems.length === 0 ? (
-            <tr>
-              <td colSpan="8" className="text-center p-4 text-gray-500">
-                No matching items found
-              </td>
+      <div className="mb-2 text-gray-500">Products</div>
+
+      <div className="overflow-x-auto rounded-md shadow-sm mb-4">
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead>
+            <tr className="bg-gray-100 text-left text-sm text-gray-600">
+              <th className="px-4 py-2"></th>
+              <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">Barcode</th>
+              <th className="px-4 py-2">Product Name</th>
+              <th className="px-4 py-2">Product Description</th>
+              <th className="px-4 py-2">Category</th>
+              <th className="px-4 py-2">Qty</th>
+              <th className="px-4 py-2">Price</th>
+              <th className="px-4 py-2">Total</th>
             </tr>
-          ) : (
-            filteredItems.map((item, index) => (
-              <tr key={item.id} className="border-t">
-                <td className="p-2">{index + 1}</td>
-                <td className="p-2">{item.name}</td>
-                <td className="p-2">{item.description}</td>
-                <td className="p-2">{item.category}</td>
-                <td className="p-2">
-                  <input
-                    type="number"
-                    value={item.qty}
-                    min="1"
-                    onChange={(e) => updateQty(item.id, e.target.value)}
-                    className="border px-2 py-1 w-16 rounded"
-                  />
-                </td>
-                <td className="p-2">₹{item.price}</td>
-                <td className="p-2">₹{item.qty * item.price}</td>
-                <td className="p-2">
+          </thead>
+          <tbody>
+            {filteredItems.map((item, index) => (
+              <tr key={item.id} className="border-t border-gray-200 text-sm">
+                <td className="px-4 py-2">
                   <button
+                    className="bg-gray-300 rounded-full px-2"
                     onClick={() => handleDelete(item.id)}
-                    className="cursor-pointer text-red-600 hover:underline"
                   >
-                    Delete
+                    -
                   </button>
                 </td>
+                <td className="px-4 py-2">{index + 1}</td>
+                <td className="px-4 py-2">{item.barcode || "-"}</td>
+                <td className="px-4 py-2">{item.name}</td>
+                <td className="px-4 py-2 break-words max-w-xs">
+                  {item.description}
+                </td>
+                <td className="px-4 py-2">{item.category}</td>
+                <td className="px-4 py-2">
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-16 p-1 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+                    value={item.qty}
+                    onChange={(e) => updateQty(item.id, e.target.value)}
+                  />
+                </td>
+                <td className="px-4 py-2">{item.price}</td>
+                <td className="px-4 py-2">{item.qty * item.price}</td>
               </tr>
-            ))
-          )}
-          {filteredItems.length > 0 && (
-            <tr className="font-bold border-t bg-gray-100">
-              <td colSpan="6" className="p-2 text-right">
-                Grand Total
-              </td>
-              <td className="p-2">₹{grandTotal}</td>
-              <td></td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            ))}
+            {filteredItems.length > 0 && (
+              <tr className="border-t border-gray-200 text-sm bg-gray-100">
+                <td className="px-4 py-2" colSpan={7}></td>
+                <td className="px-4 py-2" colSpan={1}>
+                  <span className="font-bold">Grand Total :</span>
+                </td>
+                <td className="px-4 py-2 font-bold" colSpan={1}>
+                  ₹{grandTotal.toFixed(2)}
+                </td>
+              </tr>
+            )}
+            {filteredItems.length === 0 && (
+              <tr>
+                <td colSpan="8" className="px-4 py-4 text-center text-gray-500">
+                  Nothing added.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {items.length > 0 && (
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
+        <input
+          type="text"
+          placeholder="Product Name"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={manualItem.name}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, name: e.target.value })
+          }
+        />
+        <input
+          type="text"
+          placeholder="Description"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={manualItem.description}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, description: e.target.value })
+          }
+        />
+        <input
+          type="text"
+          placeholder="Category"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={manualItem.category}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, category: e.target.value })
+          }
+        />
+        <input
+          type="number"
+          min="1"
+          placeholder="Qty"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={manualItem.qty === 0 ? "" : manualItem.qty}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, qty: Number(e.target.value) })
+          }
+        />
+        <input
+          type="number"
+          min="0"
+          placeholder="Price"
+          className="p-2 border border-gray-300 rounded-lg outline-none focus:border-[#483AA0] focus:ring-1 focus:ring-[#483AA0]"
+          value={manualItem.price === 0 ? "" : manualItem.price}
+          onChange={(e) =>
+            setManualItem({ ...manualItem, price: Number(e.target.value) })
+          }
+        />
         <button
-          onClick={() => setShowCheckout(true)}
-          className="cursor-pointer bg-[#2563EB] text-white px-6 py-2 rounded"
+          className="bg-[#E3D095] hover:bg-[#EFDCAB] text-gray-700 font-semibold px-4 py-2 rounded text-sm col-span-1 md:col-span-2 lg:col-span-1"
+          onClick={handleAddManualItem}
         >
+          + Add Item
+        </button>
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
+        <button
+          className="bg-[#483AA0] hover:bg-[#4D55CC] text-white font-semibold px-6 py-2 rounded text-lg flex items-center transition-colors duration-200"
+          onClick={() => setShowCheckout(true)}
+          disabled={items.length === 0}
+        >
+          <img
+            src="https://img.icons8.com/ios-glyphs/60/checkout.png"
+            alt="Checkout Button"
+            className="w-6 h-6 inline-block mr-2"
+            style={{ filter: "invert(1)" }}
+          />
           Checkout
         </button>
-      )}
+      </div>
+      <p className="text-gray-500 text-sm">
+        Note: <span className="text-gray-700 font-semibold">Connect barcode scanner to your computer and scan the product barcode</span> to add it to the list.<br />
+        You can also mimic a barcode scanner by{" "}
+        <span className="text-gray-700 font-semibold">
+          clicking the empty white space below ⇣ and typing the barcode number, then press <span className="bg-[#DDDDDD] p-1 rounded">Enter</span>
+        </span>{" "}
+        to add the product.
+      </p>
 
-      {/* Checkout Modal */}
-      {showCheckout && (
-        <div className="shadow-2xl fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[400px]">
-            <h3 className="text-xl font-bold mb-4">Customer Details</h3>
-            <input
-              type="text"
-              name="fname"
-              placeholder="First Name"
-              value={customer.fname}
-              onChange={handleCustomerChange}
-              className="border px-4 py-2 rounded w-full mb-2"
-              required
-            />
-            <input
-              type="text"
-              name="lname"
-              placeholder="Last Name"
-              value={customer.lname}
-              onChange={handleCustomerChange}
-              className="border px-4 py-2 rounded w-full mb-2"
-              required
-            />
-            <input
-              type="text"
-              name="phone"
-              placeholder="Phone Number"
-              value={customer.phone}
-              onChange={handleCustomerChange}
-              className="border px-4 py-2 rounded w-full mb-2"
-              required
-            />
-            <input
-              type="text"
-              name="email"
-              placeholder="Email"
-              value={customer.email}
-              onChange={handleCustomerChange}
-              className="border px-4 py-2 rounded w-full mb-2"
-            />
-            <textarea
-              name="address"
-              placeholder="Address"
-              value={customer.address}
-              onChange={handleCustomerChange}
-              className="border px-4 py-2 rounded w-full mb-4"
-              rows="3"
-              required
-            ></textarea>
-            <button
-              onClick={handleSubmit}
-              className="cursor-pointer bg-green-600 text-white px-6 py-2 rounded mr-4"
-            >
-              Print & Submit
-            </button>
-            <button
-              onClick={() => setShowCheckout(false)}
-              className="cursor-pointer bg-gray-400 text-white px-4 py-2 rounded"
-            >
-              Cancel
-            </button>
-          </div>
+      {/* Display the current keypresses */}
+      {barcodeBuffer && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-200 p-2 text-center">
+          <span className="font-semibold">Barcode Buffer: </span>
+          {barcodeBuffer}
         </div>
       )}
     </div>

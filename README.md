@@ -1,4 +1,5 @@
 # StoreMate
+main
 
 [![Website](https://img.shields.io/badge/Live%20Site-StoreMate-blue?logo=netlify)](https://store-mate.netlify.app/)
 
@@ -92,3 +93,8 @@ For questions or feedback, feel free to open an issue or reach out to [Jeevabhar
 ---
 
 > Made with ❤️ 
+
+Opensource small scale retail + CRM software.
+# Host
+Repo Live At : <a href = "http://store-mate.netlify.app/" target="_blank" > Netlify </a>
+main
