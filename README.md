@@ -1,5 +1,4 @@
 # StoreMate
-main
 
 [![Website](https://img.shields.io/badge/Live%20Site-StoreMate-blue?logo=netlify)](https://store-mate.netlify.app/)
 
@@ -7,7 +6,7 @@ main
 
 ## Overview
 
-**StoreMate** is an open-source, small-scale retail + CRM web application designed for local retailers and small businesses. It combines robust product/inventory management with customer relationship management features, making it easy to run and grow your retail business.
+**StoreMate** is an open-source, small-scale retail + CRM web application designed for local retailers and small businesses. It combines robust product/inventory management with customer relationship features.
 
 Visit the live site: [store-mate.netlify.app](https://store-mate.netlify.app/)
 
@@ -23,8 +22,8 @@ Visit the live site: [store-mate.netlify.app](https://store-mate.netlify.app/)
 
 ## Tech Stack
 
-- **Frontend:** React, Tailwind CSS
-- **Backend:** Java Spring Boot
+- **Frontend:** React + Vite, Tailwind CSS
+- **Backend:** Java Spring Boot (Gradle)
 - **Database:** MySQL
 
 ## Getting Started
@@ -32,10 +31,9 @@ Visit the live site: [store-mate.netlify.app](https://store-mate.netlify.app/)
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v14 or higher)
-- [npm](https://www.npmjs.com/) 
 - [Java JDK](https://adoptopenjdk.net/) (v11 or higher)
-- [Gradle](https://gradle.org/) (for Spring Boot backend)
-- [MySQL](https://www.mysql.com/) 
+- [Gradle](https://gradle.org/) (v8.14 or higher with Java 24)
+- [MySQL](https://www.mysql.com/) (v8.x recommended)
 
 ### Installation
 
@@ -45,56 +43,59 @@ Visit the live site: [store-mate.netlify.app](https://store-mate.netlify.app/)
 git clone https://github.com/JeevabharathiRK/StoreMate.git
 cd StoreMate
 ```
+```bash
+git clone https://github.com/JeevabharathiRK/StoreMateAPI.git
+cd StoreMateAPI
+```
 
 #### 2. Start the Backend
 
 - Go to the backend directory:
   ```bash
-  cd backend
+  cd StoreMateAPI
   ```
-- Set up your SQL database and configure database connection properties in `application.properties`.
+- Set up your SQL database and configure the database connection properties in `src/main/resources/application.properties`.
 - Build and start the Spring Boot server:
   ```bash
-  mvn spring-boot:run
+  gradle bootRun
   ```
 
 #### 3. Start the Frontend
 
 - Open a new terminal and go to the frontend directory:
   ```bash
-  cd frontend
+  cd StoreMate
   ```
 - Install dependencies:
   ```bash
   npm install
-  # or
-  yarn install
   ```
-- Start the React development server:
+- Start the Vite development server:
   ```bash
-  npm start
-  # or
-  yarn start
+  npm run dev
   ```
-- Visit [http://localhost:3000](http://localhost:3000) in your browser.
+- Visit [http://localhost:5173](http://localhost:5173) in your browser (default Vite port).
 
 ## Contributing
 
 StoreMate is open to contributions! If you have suggestions, bug fixes, or new features, please open an issue or submit a pull request.
 
+## Contributors
+
+Thanks to these amazing people for their contributions!
+
+<a href="https://github.com/JeevabharathiRK/StoreMate/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JeevabharathiRK/StoreMate" />
+</a>
+
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the [MIT License](LICENSE).
 
 ## Contact
 
-For questions or feedback, feel free to open an issue or reach out to [JeevabharathiRK]https://github.com/JeevabharathiRK/StoreMate.git 
+If you have any questions or feedback, please don't hesitate to open an issue or reach out.
 
 ---
 
-> Made with ❤️ 
-
-Opensource small scale retail + CRM software.
-# Host
-Repo Live At : <a href = "http://store-mate.netlify.app/" target="_blank" > Netlify </a>
-main
+> Made with ❤️ by JeevabharathiRK
