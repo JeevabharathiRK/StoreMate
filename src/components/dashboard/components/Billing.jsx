@@ -171,10 +171,11 @@ export default function Billing() {
               <tr key={item.id} className="border-t border-gray-200 text-sm">
                 <td className="px-4 py-2">
                   <button
-                    className="bg-gray-300 rounded-full px-2"
+                    className="bg-gray-100 hover:bg-gray-200 rounded-full px-2 transition-colors duration-200"
+                    title="Remove Item"
                     onClick={() => handleDelete(item.id)}
                   >
-                    -
+                  -
                   </button>
                 </td>
                 <td className="px-4 py-2">{index + 1}</td>
